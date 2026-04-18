@@ -1,0 +1,6 @@
+{
+  "name": "Kiki Design System",
+  "description": "A web application built following the strict Kiki Design System v2.0.0 guidelines, featuring React, Tailwind CSS, and GSAP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

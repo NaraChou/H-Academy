@@ -1,0 +1,11 @@
+/* style.css: 結構與重置 */
+.app-scrollbar {
+  overflow-y: auto;
+}
+.app-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.app-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 3px;
+}
