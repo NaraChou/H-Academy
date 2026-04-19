@@ -63,7 +63,6 @@ export const Navbar: React.FC = () => {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'student'>('student');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -88,18 +87,9 @@ export const Navbar: React.FC = () => {
       if (!supabase) return;
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
-      
-      if (currentUser) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', currentUser.id).single();
-        setUserRole(profile?.role || 'student');
-      }
 
-      const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
         setUser(session?.user ?? null);
-        if (session?.user) {
-          const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-          setUserRole(profile?.role || 'student');
-        }
       });
 
       return authListener;
@@ -117,7 +107,7 @@ export const Navbar: React.FC = () => {
   const handleLogout = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
-    navigate(userRole === 'student' ? '/student/login' : '/staff/login');
+    navigate('/login');
   };
 
   const handleNavClick = (href: string) => {
@@ -229,7 +219,7 @@ export const Navbar: React.FC = () => {
                       <div className={STYLES.userHeader}>
                         <div className={STYLES.userEmail}>{user.email}</div>
                       </div>
-                      <Link to={userRole === 'student' ? '/student/dashboard' : '/staff/dashboard'} className={STYLES.userOption}>
+                      <Link to="/dashboard" className={STYLES.userOption}>
                         <Settings size={14} />
                         個人設定
                       </Link>
@@ -241,7 +231,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <Link to="/student/login" className={STYLES.iconBtn} aria-label="會員登入">
+                <Link to="/login" className={STYLES.iconBtn} aria-label="會員登入">
                   <User size={20} />
                 </Link>
               )}
@@ -328,7 +318,7 @@ export const Navbar: React.FC = () => {
             </div>
           );
         })}
-        <Link to="/student/login" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>會員登入</Link>
+        <Link to="/login" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>會員登入</Link>
       </div>
     </>
   );

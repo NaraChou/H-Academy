@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
-import { LAYOUT } from '../../styles/layout';
-import { Award, BookOpen, Clock, TrendingUp, Plus, X, AlertCircle, Trophy, Send, Key, Star, CheckCircle2, Bell, QrCode } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { LAYOUT } from '../styles/layout';
+import { Award, BookOpen, Clock, TrendingUp, Plus, X, AlertCircle, Trophy, Send, Key, Star, CheckCircle2, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 /**
@@ -81,7 +81,7 @@ const STYLES = {
   emptyText: 'text-center py-12 text-[var(--text-sub)] italic font-light',
 } as const;
 
-export const StaffDashboard: React.FC = () => {
+export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -124,7 +124,7 @@ export const StaffDashboard: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdmin = user?.email === 'admin@kikidesign.com';
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -215,15 +215,7 @@ export const StaffDashboard: React.FC = () => {
       }
       
       setUser(currentUser);
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', currentUser.id)
-        .single();
-        
-      const isAdminUser = profile?.role === 'admin';
-      setIsAdmin(isAdminUser);
+      const isAdminUser = currentUser.email === 'admin@kikidesign.com';
 
       await Promise.all([
         fetchGrades(isAdminUser ? undefined : currentUser.id),
@@ -422,10 +414,10 @@ export const StaffDashboard: React.FC = () => {
             </div>
             <div>
               <h1 className={STYLES.title}>
-                {isAdmin ? '管理員您好' : '教職員您好'}
+                {isAdmin ? '院長您好' : `歡迎回來`}
               </h1>
               <p className={STYLES.subtitle}>
-                {isAdmin ? '系統最高權限已驗證，您可進行全面設定。' : `${user?.email?.split('@')[0]} 老師，您好`}
+                {isAdmin ? '今天想幫哪位學生加分？' : `${user?.email?.split('@')[0]} 同學，今日學習愉快`}
               </p>
             </div>
           </div>
@@ -439,17 +431,9 @@ export const StaffDashboard: React.FC = () => {
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#E11D48] border-2 border-white rounded-full" />
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <button onClick={() => navigate('/admin-checkin')} className={`${STYLES.button} hidden md:flex items-center gap-2 bg-[var(--ui-border)] hover:bg-[var(--brand-primary)]`}>
-                  <QrCode size={14} />
-                  展示簽到碼
-                </button>
-              )}
-              <button onClick={handleLogout} className={STYLES.button}>
-                安全登出
-              </button>
-            </div>
+            <button onClick={handleLogout} className={STYLES.button}>
+              安全登出
+            </button>
           </div>
         </header>
 

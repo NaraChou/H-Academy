@@ -186,8 +186,8 @@ export const ADVANTAGES_DATA = [
 
 export const SOCIAL_LINKS = [
   { label: 'Facebook', href: '#' },
-  { label: 'LINE', href: '#' },
-  { label: '教職員系統', href: '/staff/login' },
+  { label: 'Instagram', href: '#' },
+  { label: 'YouTube', href: '#' },
 ];
 
 export const CAMPUS_DATA = {

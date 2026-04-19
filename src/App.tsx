@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { CustomCursor } from './components/common/CustomCursor';
 import { Loader } from './components/ui/Loader';
 import { Navbar } from './components/layout/Navbar';
@@ -14,15 +14,8 @@ import { EducationPage } from './pages/Education';
 import { AboutPage } from './pages/About';
 import { CampusPage } from './pages/Campus';
 import { News } from './pages/News';
-import { StaffLogin } from './pages/auth/StaffLogin';
-import { StudentLogin } from './pages/auth/StudentLogin';
-import { UpdatePassword } from './pages/auth/UpdatePassword';
-import { StaffDashboard } from './pages/dashboard/StaffDashboard';
-import { supabase } from './lib/supabase';
-import { StudentDashboard } from './pages/dashboard/StudentDashboard';
-import { AuthGuard } from './components/auth/AuthGuard';
-import { AdminCheckIn } from './pages/AdminCheckIn';
-import { EmployeeCheckIn } from './pages/EmployeeCheckIn';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
 import { ScrollToAnchor } from './components/common/ScrollToAnchor';
 import { BackToTop } from './components/common/BackToTop';
 
@@ -60,22 +53,6 @@ const Home = () => (
 );
 
 export default function App() {
-  const navigate = useNavigate();
-
-  React.useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      // 監聽重設密碼事件或透過邀請連結進入初始化的 session
-      if (event === 'PASSWORD_RECOVERY' || event === 'INITIAL_SESSION') {
-        const { data: { session } } = await supabase.auth.getSession();
-        // 確保用戶已認證，且不重複跳轉
-        if (session && window.location.pathname !== '/update-password') {
-          navigate('/update-password');
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
   return (
     <div className={STYLES.wrapper}>
       <ScrollToAnchor />
@@ -91,37 +68,8 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/campus" element={<CampusPage />} />
           <Route path="/news" element={<News />} />
-          
-          {/* Auth Routes */}
-          <Route path="/staff/login" element={<StaffLogin />} />
-          <Route path="/student/login" element={<StudentLogin />} />
-          <Route path="/update-password" element={<UpdatePassword />} />
-          
-          {/* Protected Staff Routes */}
-          <Route path="/staff/dashboard" element={
-            <AuthGuard allowedRoles={['admin', 'staff']}>
-              <StaffDashboard />
-            </AuthGuard>
-          } />
-          
-          {/* Protected Student Routes */}
-          <Route path="/student/dashboard" element={
-            <AuthGuard allowedRoles={['student']}>
-              <StudentDashboard />
-            </AuthGuard>
-          } />
-
-          {/* Legacy or unified tools */}
-          <Route path="/admin-checkin" element={
-            <AuthGuard allowedRoles={['admin']}>
-              <AdminCheckIn />
-            </AuthGuard>
-          } />
-          <Route path="/staff/check-in" element={
-            <AuthGuard allowedRoles={['admin', 'staff']}>
-              <EmployeeCheckIn />
-            </AuthGuard>
-          } />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
         
         {/* Footer Section */}
