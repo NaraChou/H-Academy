@@ -18,6 +18,7 @@ export const NAV_ITEMS = [
       { label: '活動集錦', href: '/campus#gallery' }
     ]
   },
+  { label: '聯絡我們', href: '/#contact' },
 ];
 
 export const COURSE_CATEGORIES = ['全部課程', '國小', '國中', '高中', '英文', '數學', '自然'];
@@ -158,9 +159,6 @@ export const EDUCATION_STAGES = [
 ];
 
 export const FOOTER_LINKS = [
-  { label: '探索課程', href: '/education' },
-  { label: '關於欣育', href: '/about' },
-  { label: '相關連結', href: '/#links' },
   { label: '人才招募', href: '/#jobs' },
   { label: '聯絡我們', href: '/#contact' },
 ];

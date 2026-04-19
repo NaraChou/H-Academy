@@ -1,4 +1,7 @@
 /* style.css: 結構與重置 */
+html, body {
+  scroll-behavior: smooth;
+}
 .app-scrollbar {
   overflow-y: auto;
 }

@@ -121,8 +121,9 @@ export const EducationPage: React.FC = () => {
     const el = document.getElementById(id);
     if (el) {
       // 減去 header 高度做平滑滾動
+      const topPos = el.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({
-        top: el.offsetTop - 80,
+        top: topPos,
         behavior: 'smooth'
       });
     }

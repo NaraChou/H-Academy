@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { LAYOUT } from '../../styles/layout';
+import { supabase } from '../../lib/supabase';
 
 /**
  * [A] 視覺資訊備註
@@ -19,6 +20,7 @@ const GSAP_SELECTORS = {
 const FORM_FIELDS = [
   { id: 'contact-name', name: 'name', type: 'text', label: '您的姓名 Name' },
   { id: 'contact-email', name: 'email', type: 'email', label: '電子郵件 Email' },
+  { id: 'contact-phone', name: 'phone', type: 'tel', label: '聯絡電話 Phone' },
 ];
 
 // [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
@@ -28,7 +30,8 @@ const STYLES = {
   
   // Left Column
   leftCol:       'flex flex-col flex-1 max-w-sm',
-  title:         'text-4xl font-bold tracking-tight text-[var(--brand-primary)] mb-6 theme-transition md:text-5xl lg:text-6xl',
+  title:         'text-4xl font-bold tracking-tight text-[var(--brand-primary)] mb-2 theme-transition md:text-5xl lg:text-6xl',
+  titleEng:      'text-sm tracking-[0.3em] text-[var(--text-sub)] uppercase mb-6',
   desc:          'text-base leading-loose text-[var(--text-sub)] theme-transition',
   
   // Right Column (Form)
@@ -42,12 +45,26 @@ const STYLES = {
   
   // Button
   btnContainer:  'flex justify-start mt-4',
-  button:        'px-12 py-4 rounded-full bg-[var(--brand-primary)] text-[var(--ui-bg)] font-medium transition-colors hover:bg-[var(--hsinyu-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--hsinyu-blue)] focus:ring-offset-2 focus:ring-offset-[var(--ui-bg)] theme-transition',
+  button:        'px-12 py-4 rounded-full bg-[var(--brand-primary)] text-[var(--ui-bg)] font-medium transition-colors hover:bg-[var(--hsinyu-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--hsinyu-blue)] focus:ring-offset-2 focus:ring-offset-[var(--ui-bg)] disabled:opacity-50 disabled:cursor-not-allowed theme-transition',
+  
+  // Feedback
+  message:       'mt-4 text-sm font-medium',
+  success:       'text-emerald-600',
+  error:         'text-rose-600',
 } as const;
 
 // [C] 元件主體
 export const ContactForm: React.FC = () => {
   const btnRef = useRef<HTMLButtonElement>(null);
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '', website_url: '' });
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success'|'error', msg: string } | null>(null);
+  const [cooldown, setCooldown] = useState(false);
+  const honeypotRef = useRef<HTMLInputElement>(null);
+
+  // Email/Phone validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[0-9+\-\s]{8,15}$/;
 
   // rAF State for Magnetic Effect
   const target = useRef({ x: 0, y: 0 });
@@ -121,13 +138,65 @@ export const ContactForm: React.FC = () => {
     };
   }, []);
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Honeypot check
+    if (honeypotRef.current?.value) {
+      console.error('Spam detected via bot_field');
+      return; 
+    }
+
+    // 環境變數檢查
+    if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      setStatus({ type: 'error', msg: '系統組態錯誤，請稍後再試。' });
+      return;
+    }
+
+    setLoading(true);
+    setStatus(null);
+
+    // If Supabase isn't configured, show a mockup success message.
+    if (!supabase) {
+      setTimeout(() => {
+        setStatus({ type: 'success', msg: '開發模式：資料送出成功 (Supabase 尚未設定)' });
+        setFormData({ name: '', email: '', phone: '', message: '', website_url: '' });
+        setLoading(false);
+        setCooldown(true);
+        setTimeout(() => setCooldown(false), 30000); // 30s cooldown
+      }, 1000);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('contacts').insert([formData]);
+      if (error) throw error;
+      
+      setStatus({ type: 'success', msg: '感謝您的諮詢，我們已收到訊息！' });
+      setFormData({ name: '', email: '', phone: '', message: '', website_url: '' });
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 30000); // 30s cooldown
+    } catch (err: any) {
+      console.error('Submission error:', err);
+      setStatus({ type: 'error', msg: err?.message || '送出失敗，請稍後再試。' });
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <section className={STYLES.wrapper} aria-labelledby="contact-heading">
+    <section id="contact" className={STYLES.wrapper} aria-labelledby="contact-heading">
       <div className={STYLES.container}>
         
         {/* Left Column */}
         <header className={STYLES.leftCol}>
           <h2 id="contact-heading" className={STYLES.title}>數位諮詢</h2>
+          <div className={STYLES.titleEng}>CONTACT US</div>
           <p className={STYLES.desc}>
             開啟孩子的無限可能，讓我們的專業顧問團隊為您解答所有學習上的疑惑。歡迎留下資訊，我們將盡快與您聯繫。
           </p>
@@ -135,7 +204,7 @@ export const ContactForm: React.FC = () => {
 
         {/* Right Column / Form */}
         <div className={STYLES.rightCol}>
-          <form className={STYLES.form} onSubmit={(e) => e.preventDefault()} aria-label="數位諮詢表單">
+          <form className={STYLES.form} onSubmit={handleSubmit} aria-label="數位諮詢表單">
             
             {/* DRY Map Render for Inputs */}
             {FORM_FIELDS.map((field) => (
@@ -146,13 +215,35 @@ export const ContactForm: React.FC = () => {
                   type={field.type}
                   placeholder={field.label}
                   className={STYLES.input}
-                  required
+                  value={(formData as any)[field.name]}
+                  onChange={handleChange}
+                  required={field.name !== 'phone'}
                 />
                 <label htmlFor={field.id} className={STYLES.label}>
                   {field.label}
                 </label>
               </div>
             ))}
+
+            {/* Honeypot */}
+            <input 
+              type="text" 
+              name="bot_field" 
+              ref={honeypotRef}
+              style={{display: 'none'}}
+              tabIndex={-1} 
+              autoComplete="off"
+            />
+            {/* Website Honeypot (Legacy) */}
+            <input 
+              type="text" 
+              name="website_url" 
+              value={formData.website_url} 
+              onChange={handleChange}
+              className="hidden" 
+              tabIndex={-1} 
+              autoComplete="off"
+            />
 
             {/* Textarea Field */}
             <div className={STYLES.inputGroup}>
@@ -162,6 +253,8 @@ export const ContactForm: React.FC = () => {
                 rows={3}
                 placeholder="您的訊息 Message"
                 className={`${STYLES.input} resize-none`}
+                value={formData.message}
+                onChange={handleChange}
                 required
               />
               <label htmlFor="contact-message" className={STYLES.label}>
@@ -174,12 +267,19 @@ export const ContactForm: React.FC = () => {
               <button
                 ref={btnRef}
                 type="submit"
+                disabled={loading || cooldown}
                 className={`${GSAP_SELECTORS.magneticBtn} ${STYLES.button}`}
                 aria-label="提交諮詢表單"
               >
-                啟程探索
+                {loading ? '傳送中...' : cooldown ? '感謝您的諮詢，我們已收到訊息！' : '啟程探索'}
               </button>
             </div>
+            
+            {status && (
+              <div aria-live="polite" className={`${STYLES.message} ${status.type === 'success' ? STYLES.success : STYLES.error}`}>
+                {status.msg}
+              </div>
+            )}
 
           </form>
         </div>

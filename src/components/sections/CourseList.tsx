@@ -36,7 +36,7 @@ const STYLES = {
 // [C] 元件主體
 export const CourseList: React.FC = () => {
   return (
-    <section className={STYLES.wrapper} aria-labelledby="courses-heading">
+    <section id="courses" className={STYLES.wrapper} aria-labelledby="courses-heading">
       <header className={STYLES.header}>
         <h2 id="courses-heading" className={STYLES.title}>陪伴成長的學習路徑</h2>
         <p className={STYLES.subtitle}>

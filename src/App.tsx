@@ -13,6 +13,11 @@ import { WorkList } from './components/sections/WorkList';
 import { EducationPage } from './pages/Education';
 import { AboutPage } from './pages/About';
 import { CampusPage } from './pages/Campus';
+import { News } from './pages/News';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { ScrollToAnchor } from './components/common/ScrollToAnchor';
+import { BackToTop } from './components/common/BackToTop';
 
 /**
  * [A] 視覺資訊備註
@@ -21,8 +26,8 @@ import { CampusPage } from './pages/Campus';
 
 const STYLES = {
   wrapper: 'relative flex flex-col min-h-screen bg-[var(--ui-bg)] theme-transition',
-  // Main
-  main: 'flex flex-col flex-1 w-full pt-32 px-6 overflow-y-auto theme-transition md:px-16 lg:px-24 mx-auto max-w-[1600px]',
+  // Main - remove overflow-y-auto so window manages scrolling (required for GSAP ScrollTrigger and window.scrollTo to work correctly)
+  main: 'flex flex-col flex-1 w-full pt-32 px-2 md:px-16 lg:px-24 mx-auto max-w-[1600px]',
 } as const;
 
 const Home = () => (
@@ -36,7 +41,7 @@ const Home = () => (
     {/* Course List Section (preview) */}
     <CourseList />
 
-    {/* 插入作品列表元件 */}
+    {/* 活動錦集元件取代原作品列表 */}
     <WorkList />
 
     {/* Connect & Consult Form Section */}
@@ -50,6 +55,7 @@ const Home = () => (
 export default function App() {
   return (
     <div className={STYLES.wrapper}>
+      <ScrollToAnchor />
       <Loader />
       <Navbar />
       <CustomCursor />
@@ -61,11 +67,16 @@ export default function App() {
           <Route path="/courses" element={<EducationPage />} /> {/* Fallback support */}
           <Route path="/about" element={<AboutPage />} />
           <Route path="/campus" element={<CampusPage />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
         
         {/* Footer Section */}
         <Footer />
       </main>
+      
+      <BackToTop />
     </div>
   );
 }

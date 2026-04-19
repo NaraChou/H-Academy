@@ -27,11 +27,11 @@ const STYLES = {
   marqueeContainer: 'absolute inset-0 flex items-center w-full h-full z-0 overflow-hidden opacity-40 select-none pointer-events-none theme-transition',
   marqueeTrack:     'flex w-max will-change-transform',
   marqueeItem:      'flex shrink-0 px-4',
-  marqueeText:      'whitespace-nowrap text-[8rem] font-bold text-transparent [-webkit-text-stroke:1px_var(--text-sub)] theme-transition md:text-[12rem] lg:text-[18rem]',
+  marqueeText:      'whitespace-nowrap text-[8rem] font-bold text-neutral-900 opacity-20 theme-transition md:text-[12rem] lg:text-[18rem]',
   
   // Content Layer (z-10)
   contentBox:       `${LAYOUT.colCenterText} relative z-10 max-w-3xl px-6 mix-blend-normal`,
-  title:            'text-3xl font-bold tracking-widest text-[var(--brand-primary)] leading-tight mb-6 theme-transition md:text-4xl lg:text-5xl',
+  title:            'text-3xl font-bold tracking-widest text-[var(--hsinyu-blue)] leading-tight mb-6 theme-transition md:text-4xl lg:text-5xl',
   desc:             'text-base font-light text-[var(--text-sub)] leading-loose tracking-[0.1em] theme-transition md:text-lg lg:text-xl',
 } as const;
 
@@ -50,7 +50,7 @@ export const MarqueeVision: React.FC = () => {
       tlRef.current = gsap.to(`.${GSAP_SELECTORS.track}`, {
         xPercent: -50,
         ease: 'none',
-        duration: 35, // 調整滾動速度
+        duration: 70, // 調整滾動速度 (加大時間設定，動畫更緩慢)
         repeat: -1,
       });
     }, el);

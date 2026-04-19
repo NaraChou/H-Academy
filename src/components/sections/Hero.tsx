@@ -99,6 +99,14 @@ export const Hero: React.FC = () => {
     };
   }, []);
 
+  const scrollToCourses = () => {
+    const element = document.getElementById('courses');
+    if (element) {
+      // 確保使用平滑捲動，移除會干擾渲染的額外屬性操作
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <section className={STYLES.wrapper} aria-label="Hero Section">
       {/* 背景裝飾：極簡數位葉片 */}
@@ -118,7 +126,11 @@ export const Hero: React.FC = () => {
         </p>
 
         <div className={GSAP_SELECTORS.action}>
-          <button className={STYLES.button} aria-label="了解課程詳情">
+          <button 
+            className={STYLES.button} 
+            aria-label="了解課程詳情"
+            onClick={scrollToCourses}
+          >
             探索未來路徑
           </button>
         </div>
