@@ -24,6 +24,7 @@ export const UpdatePassword: React.FC = () => {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Frontend validation
     if (password !== confirmPassword) {
       setErrorMsg('密碼不一致');
       return;
@@ -43,9 +44,15 @@ export const UpdatePassword: React.FC = () => {
       // Successfully updated
       navigate('/student/dashboard');
     } catch (err: any) {
-      setErrorMsg(err.message || '更新失敗，請稍後再試');
+      console.error('Password update error:', err);
+      // Supabase 422: Unprocessable Entity, often means expired token or session issues
+      if (err.status === 422 || err.message?.includes('session')) {
+        setErrorMsg('連結已過期，請聯繫管理員重新發送邀請');
+      } else {
+        setErrorMsg(err.message || '更新失敗，請稍候重試');
+      }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Ensure loading always stops
     }
   };
 
