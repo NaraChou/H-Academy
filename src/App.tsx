@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { CustomCursor } from './components/common/CustomCursor';
 import { Loader } from './components/ui/Loader';
 import { Navbar } from './components/layout/Navbar';
@@ -16,7 +16,9 @@ import { CampusPage } from './pages/Campus';
 import { News } from './pages/News';
 import { StaffLogin } from './pages/auth/StaffLogin';
 import { StudentLogin } from './pages/auth/StudentLogin';
+import { UpdatePassword } from './pages/auth/UpdatePassword';
 import { StaffDashboard } from './pages/dashboard/StaffDashboard';
+import { supabase } from './lib/supabase';
 import { StudentDashboard } from './pages/dashboard/StudentDashboard';
 import { AuthGuard } from './components/auth/AuthGuard';
 import { AdminCheckIn } from './pages/AdminCheckIn';
@@ -58,6 +60,17 @@ const Home = () => (
 );
 
 export default function App() {
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/update-password');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   return (
     <div className={STYLES.wrapper}>
       <ScrollToAnchor />
@@ -77,6 +90,7 @@ export default function App() {
           {/* Auth Routes */}
           <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/update-password" element={<UpdatePassword />} />
           
           {/* Protected Staff Routes */}
           <Route path="/staff/dashboard" element={
