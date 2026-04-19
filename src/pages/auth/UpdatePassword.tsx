@@ -57,7 +57,14 @@ export const UpdatePassword: React.FC = () => {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       
-      // Successfully updated
+      // 強制刷新 Session 以確保身分同步
+      await supabase.auth.refreshSession();
+      
+      // 成功提示
+      setErrorMsg('密碼設定成功，即將進入系統');
+      
+      // 確保 loading 停止並導向 Dashboard
+      setIsLoading(false);
       navigate('/student/dashboard');
     } catch (err: any) {
       console.error('Password update error:', err);
