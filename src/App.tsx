@@ -14,8 +14,13 @@ import { EducationPage } from './pages/Education';
 import { AboutPage } from './pages/About';
 import { CampusPage } from './pages/Campus';
 import { News } from './pages/News';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
+import { StaffLogin } from './pages/auth/StaffLogin';
+import { StudentLogin } from './pages/auth/StudentLogin';
+import { StaffDashboard } from './pages/dashboard/StaffDashboard';
+import { StudentDashboard } from './pages/dashboard/StudentDashboard';
+import { AuthGuard } from './components/auth/AuthGuard';
+import { AdminCheckIn } from './pages/AdminCheckIn';
+import { EmployeeCheckIn } from './pages/EmployeeCheckIn';
 import { ScrollToAnchor } from './components/common/ScrollToAnchor';
 import { BackToTop } from './components/common/BackToTop';
 
@@ -68,8 +73,36 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/campus" element={<CampusPage />} />
           <Route path="/news" element={<News />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* Auth Routes */}
+          <Route path="/staff/login" element={<StaffLogin />} />
+          <Route path="/student/login" element={<StudentLogin />} />
+          
+          {/* Protected Staff Routes */}
+          <Route path="/staff/dashboard" element={
+            <AuthGuard allowedRoles={['admin', 'staff']}>
+              <StaffDashboard />
+            </AuthGuard>
+          } />
+          
+          {/* Protected Student Routes */}
+          <Route path="/student/dashboard" element={
+            <AuthGuard allowedRoles={['student']}>
+              <StudentDashboard />
+            </AuthGuard>
+          } />
+
+          {/* Legacy or unified tools */}
+          <Route path="/admin-checkin" element={
+            <AuthGuard allowedRoles={['admin']}>
+              <AdminCheckIn />
+            </AuthGuard>
+          } />
+          <Route path="/staff/check-in" element={
+            <AuthGuard allowedRoles={['admin', 'staff']}>
+              <EmployeeCheckIn />
+            </AuthGuard>
+          } />
         </Routes>
         
         {/* Footer Section */}

@@ -31,12 +31,11 @@ export const BackToTop: React.FC = () => {
   }, []);
 
   const scrollToTop = () => {
-    // Utilize GSAP ScrollToPlugin for organic, ease-in-out motion
-    // Added autoKill: false so it doesn't interrupt if user interacts
+    // 採用 power2.inOut 取代原本的 out，提供「柔和起步 -> 加速 -> 優雅煞車」的頂級絲滑感
     gsap.to(window, {
-      duration: 2.5,
-      scrollTo: { y: 0, autoKill: false },
-      ease: 'expo.inOut',
+      duration: 1.2,
+      scrollTo: { y: 0, autoKill: true },
+      ease: 'power2.inOut',
     });
   };
 

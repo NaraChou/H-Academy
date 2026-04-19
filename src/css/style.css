@@ -1,6 +1,6 @@
 /* style.css: 結構與重置 */
 html, body {
-  scroll-behavior: smooth;
+  /* 原本的 scroll-behavior: smooth 會導致與 GSAP ScrollToPlugin 衝突產生 1 秒的起步延遲，已移除 */
 }
 .app-scrollbar {
   overflow-y: auto;

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { LAYOUT } from '../../styles/layout';
 
@@ -36,6 +37,7 @@ const STYLES = {
 // [C] 元件主體
 export const Hero: React.FC = () => {
   const leafRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   
   // rAF State
   const target = useRef({ x: 0, y: 0 });
@@ -99,12 +101,9 @@ export const Hero: React.FC = () => {
     };
   }, []);
 
-  const scrollToCourses = () => {
-    const element = document.getElementById('courses');
-    if (element) {
-      // 確保使用平滑捲動，移除會干擾渲染的額外屬性操作
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  const handleExplorePaths = () => {
+    navigate('/education');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -128,8 +127,8 @@ export const Hero: React.FC = () => {
         <div className={GSAP_SELECTORS.action}>
           <button 
             className={STYLES.button} 
-            aria-label="了解課程詳情"
-            onClick={scrollToCourses}
+            aria-label="探索完整全齡課程體系"
+            onClick={handleExplorePaths}
           >
             探索未來路徑
           </button>

@@ -160,7 +160,7 @@ export const EDUCATION_STAGES = [
 
 export const FOOTER_LINKS = [
   { label: '人才招募', href: '/#jobs' },
-  { label: '聯絡我們', href: '/#contact' },
+  { label: '隱私權政策', href: '/#privacy' },
 ];
 
 export const HISTORY_DATA = [
@@ -186,8 +186,8 @@ export const ADVANTAGES_DATA = [
 
 export const SOCIAL_LINKS = [
   { label: 'Facebook', href: '#' },
-  { label: 'Instagram', href: '#' },
-  { label: 'YouTube', href: '#' },
+  { label: 'LINE', href: '#' },
+  { label: '教職員系統', href: '/staff/login' },
 ];
 
 export const CAMPUS_DATA = {

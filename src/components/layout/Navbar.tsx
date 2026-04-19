@@ -63,6 +63,7 @@ export const Navbar: React.FC = () => {
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'student'>('student');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -87,9 +88,18 @@ export const Navbar: React.FC = () => {
       if (!supabase) return;
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
+      
+      if (currentUser) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', currentUser.id).single();
+        setUserRole(profile?.role || 'student');
+      }
 
-      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
         setUser(session?.user ?? null);
+        if (session?.user) {
+          const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+          setUserRole(profile?.role || 'student');
+        }
       });
 
       return authListener;
@@ -107,7 +117,27 @@ export const Navbar: React.FC = () => {
   const handleLogout = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
-    navigate('/login');
+    navigate(userRole === 'student' ? '/student/login' : '/staff/login');
+  };
+
+  const handleNavClick = (href: string) => {
+    // If clicking the current path/hash, manually scroll since router doesn't trigger URL change
+    const [path, hash] = href.split('#');
+    if (location.pathname === path && location.hash.replace('#', '') === (hash || '')) {
+      if (hash) {
+        setMobileMenuOpen(false);
+        const el = document.getElementById(hash);
+        if (el) {
+          const topPos = el.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: topPos, behavior: 'smooth' });
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      // Different route or hash, let route transition happen but close mobile menus
+       setMobileMenuOpen(false);
+    }
   };
 
   useEffect(() => {
@@ -128,14 +158,14 @@ export const Navbar: React.FC = () => {
           <nav className={STYLES.nav} aria-label="主要導覽列">
             {NAV_ITEMS.map((item, idx) => (
               <div key={idx} className={item.children ? STYLES.navItemWrap : ''}>
-                <Link to={item.href} className={STYLES.navLink}>
+                <Link to={item.href} className={STYLES.navLink} onClick={() => handleNavClick(item.href)}>
                    {item.label}
                 </Link>
                 {item.children && (
                   <div className={STYLES.dropdown}>
                     <div className={STYLES.dropdownContent}>
                       {item.children.map((child, cIdx) => (
-                        <Link key={cIdx} to={child.href} className={STYLES.dropdownLink}>
+                        <Link key={cIdx} to={child.href} className={STYLES.dropdownLink} onClick={() => handleNavClick(child.href)}>
                           {child.label}
                         </Link>
                       ))}
@@ -199,7 +229,7 @@ export const Navbar: React.FC = () => {
                       <div className={STYLES.userHeader}>
                         <div className={STYLES.userEmail}>{user.email}</div>
                       </div>
-                      <Link to="/dashboard" className={STYLES.userOption}>
+                      <Link to={userRole === 'student' ? '/student/dashboard' : '/staff/dashboard'} className={STYLES.userOption}>
                         <Settings size={14} />
                         個人設定
                       </Link>
@@ -211,7 +241,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <Link to="/login" className={STYLES.iconBtn} aria-label="會員登入">
+                <Link to="/student/login" className={STYLES.iconBtn} aria-label="會員登入">
                   <User size={20} />
                 </Link>
               )}
@@ -282,14 +312,14 @@ export const Navbar: React.FC = () => {
                 onClick={() => hasChildren ? setExpandedItem(isExpanded ? null : idx) : null}
                 className={`${STYLES.mobileNavLink} flex items-center gap-2`}
               >
-                {hasChildren ? item.label : <Link to={item.href}>{item.label}</Link>}
+                {hasChildren ? item.label : <Link to={item.href} onClick={() => handleNavClick(item.href)}>{item.label}</Link>}
                 {hasChildren && <ChevronDown size={20} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />}
               </button>
               
               {hasChildren && isExpanded && (
                 <div className="flex flex-col items-center gap-2 mt-2 border-t border-[var(--ui-border)] pt-2 w-full">
                   {item.children!.map((child, cIdx) => (
-                    <Link key={`child-${cIdx}`} to={child.href} className="text-lg text-[var(--text-sub)] hover:text-[var(--hsinyu-blue)] transition-colors theme-transition py-1">
+                    <Link key={`child-${cIdx}`} to={child.href} className="text-lg text-[var(--text-sub)] hover:text-[var(--hsinyu-blue)] transition-colors theme-transition py-1" onClick={() => handleNavClick(child.href)}>
                       {child.label}
                     </Link>
                   ))}
@@ -298,7 +328,7 @@ export const Navbar: React.FC = () => {
             </div>
           );
         })}
-        <Link to="/login" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>會員登入</Link>
+        <Link to="/student/login" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>會員登入</Link>
       </div>
     </>
   );

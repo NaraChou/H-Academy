@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { EDUCATION_STAGES } from '../data/appData';
@@ -57,6 +58,7 @@ const STYLES = {
 export const EducationPage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeHash, setActiveHash] = useState(EDUCATION_STAGES[0].id);
+  const location = useLocation();
 
   useEffect(() => {
     // [視覺體驗] 綁定 IntersectionObserver 給點狀導航，當每個學齡區塊進入視野中心時，點點會填滿並放大。
@@ -129,14 +131,16 @@ export const EducationPage: React.FC = () => {
     }
   };
 
-  // 進入頁面時若有 Hash，也做一次定位
+  // 進入頁面或 Hash 改變時，進行平滑捲動定位
   useEffect(() => {
-    if (window.location.hash) {
+    if (location.hash) {
       setTimeout(() => {
-        scrollToHash(window.location.hash.replace('#', ''));
+        scrollToHash(location.hash.replace('#', ''));
       }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, []);
+  }, [location.hash]);
 
   return (
     <div className={STYLES.wrapper} ref={containerRef}>

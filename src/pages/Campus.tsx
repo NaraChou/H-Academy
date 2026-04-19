@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapPin, Phone } from 'lucide-react';
@@ -68,6 +69,23 @@ const STYLES = {
 export const CampusPage: React.FC = () => {
   const honorsTrackRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<gsap.core.Tween | null>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    // Handling anchor scroll
+    if (location.hash) {
+      setTimeout(() => {
+        const id = location.hash.replace('#', '');
+        const el = document.getElementById(id);
+        if (el) {
+          const topPos = el.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: topPos, behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.hash]);
 
   useEffect(() => {
     // 1. 初始化 Honors 自動橫向滾動
@@ -178,7 +196,7 @@ export const CampusPage: React.FC = () => {
         <div className={STYLES.bentoGrid}>
           {CAMPUS_DATA.gallery.map((img, idx) => {
             // Bento Grid 跨欄邏輯：根據索引分配不同的 span，製造錯落感
-            let spanClass = STYLES.bentoSpan1x1;
+            let spanClass: string = STYLES.bentoSpan1x1;
             if (idx === 0) spanClass = STYLES.bentoSpan2x2;
             else if (idx === 3) spanClass = STYLES.bentoSpan2x1;
             else if (idx === 5) spanClass = STYLES.bentoSpan1x2;

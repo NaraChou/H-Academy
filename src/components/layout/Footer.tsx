@@ -1,4 +1,5 @@
 import React from 'react';
+import { QrCode } from 'lucide-react';
 import { LAYOUT } from '../../styles/layout';
 import { FOOTER_LINKS, SOCIAL_LINKS } from '../../data/appData';
 
@@ -35,7 +36,7 @@ const STYLES = {
   bottomSection: 'flex flex-col gap-6 mt-20 pt-8 border-t border-[var(--ui-border)] text-sm text-[var(--text-sub)] md:flex-row md:justify-between md:items-center theme-transition',
   copyright:     'text-sm theme-transition',
   socialNav:     'flex gap-6',
-  socialLink:    'text-[var(--text-sub)] transition-colors duration-300 hover:text-[var(--brand-primary)] theme-transition',
+  socialLink:    'flex items-center gap-2 text-[var(--text-sub)] transition-colors duration-300 hover:text-[var(--brand-primary)] theme-transition',
 } as const;
 
 // [C] 元件主體
@@ -74,8 +75,15 @@ export const Footer: React.FC = () => {
             <ul className={STYLES.socialNav}>
               {SOCIAL_LINKS.map((social, idx) => (
                 <li key={idx}>
-                  <a href={social.href} className={STYLES.socialLink} aria-label={`前往我們的 ${social.label}`}>
-                    {social.label}
+                  <a href={social.href} className={STYLES.socialLink} aria-label={`前往 ${social.label}`}>
+                    {social.label === '教職員系統' ? (
+                      <>
+                        <QrCode size={18} />
+                        <span className="hidden sm:inline">{social.label}</span>
+                      </>
+                    ) : (
+                      social.label
+                    )}
                   </a>
                 </li>
               ))}
