@@ -16,6 +16,7 @@ import { CampusPage } from './pages/Campus';
 import { News } from './pages/News';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { Activate } from './pages/Activate';
 import { ScrollToAnchor } from './components/common/ScrollToAnchor';
 import { BackToTop } from './components/common/BackToTop';
 
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/campus" element={<CampusPage />} />
           <Route path="/news" element={<News />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/activate" element={<Activate />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
         
