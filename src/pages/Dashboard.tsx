@@ -54,7 +54,7 @@ interface Announcement {
 
 // [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
-  wrapper:     'flex flex-col min-h-screen w-full px-1 py-10 bg-[var(--ui-bg)] theme-transition md:px-6 md:py-20',
+  wrapper:     'flex flex-col w-full px-1 py-10 bg-[var(--ui-bg)] theme-transition md:px-6 md:pt-12 md:pb-0',
   container:   LAYOUT.container,
   header:      'flex justify-between items-end mb-8 border-b border-[var(--ui-border)] pb-6 theme-transition md:mb-12',
   title:       'text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition md:text-4xl',
@@ -66,16 +66,21 @@ const STYLES = {
   bentoItem:   'flex flex-col justify-between min-h-[160px] p-6 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm overflow-hidden theme-transition hover:shadow-lg duration-500 md:min-h-0 md:p-8',
   bentoLarge:  'md:col-span-2 md:row-span-2 h-full',
   bentoFull:   'md:col-span-3 row-span-1',
-
   itemHeader:  'flex items-center gap-3 mb-4',
   iconBox:     'p-2 rounded-lg bg-[var(--ui-border)] text-[var(--brand-primary)]',
   cardLabel:   'text-[10px] font-bold tracking-widest text-[var(--text-sub)] uppercase',
 
-  // Table
+  // Student grade table (inside Bento)
   gradeRow:     'grid items-center px-4 py-5 border-b border-[var(--ui-border)] last:border-0 hover:bg-[var(--ui-bg)]/50 transition-colors gap-y-3 md:gap-y-0',
   gradeSubject: 'font-bold text-[var(--text-main)]',
   gradeMeta:    'text-[10px] text-[var(--text-sub)] uppercase tracking-tighter',
   gradeScore:   'font-mono text-xl font-black transition-all duration-300',
+
+  // Admin grade section（Bento Grid 外，流式自然高度不受 Grid 高度限制）
+  gradeSection: 'mt-6 mb-8 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm theme-transition md:mt-8 md:mb-12',
+  gradeTh:      'px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap',
+  gradeTd:      'px-6 py-5 text-sm text-[var(--text-main)] whitespace-nowrap',
+  gradeTdRight: 'px-6 py-5 text-right whitespace-nowrap',
 
   // Announce
   announceItem:  'group flex justify-between items-center px-2 py-4 border-b border-[var(--ui-border)] last:border-0 cursor-pointer hover:bg-[var(--ui-bg)]/30 transition-all',
@@ -107,7 +112,7 @@ const STYLES = {
 } as const;
 
 const PER_PAGE_ANNOUNCE = 10;
-const PER_PAGE_GRADES   = 20;
+const PER_PAGE_GRADES   = 10;
 
 // [C] 元件主體
 export const Dashboard: React.FC = () => {
@@ -531,75 +536,61 @@ export const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {/* 成績面板 */}
-          <div className={`${STYLES.bentoItem} ${isAdmin ? 'md:col-span-3 h-auto min-h-[600px] py-12' : STYLES.bentoLarge}`}>
-            <div className="flex justify-between items-start mb-6 w-full px-2">
-              <div className={`${STYLES.itemHeader} mb-0`}>
-                <div className={STYLES.iconBox}><Award size={20} aria-hidden="true" /></div>
-                <span className={STYLES.cardLabel}>{isAdmin ? '全校成績管理' : '學期成績單'}</span>
+          {/* 學生專屬成績面板（Bento Large） */}
+          {!isAdmin && (
+            <div className={`${STYLES.bentoItem} ${STYLES.bentoLarge}`}>
+              <div className="flex justify-between items-start mb-6 w-full px-2">
+                <div className={`${STYLES.itemHeader} mb-0`}>
+                  <div className={STYLES.iconBox}><Award size={20} aria-hidden="true" /></div>
+                  <span className={STYLES.cardLabel}>學期成績單</span>
+                </div>
               </div>
-              {isAdmin && (
-                <button onClick={() => setIsGradeOpen(true)} className={STYLES.addBtn} aria-label="新增成績">
-                  <Plus size={12} aria-hidden="true" /> Add Grade
-                </button>
-              )}
-            </div>
 
-            {grades.length > 0 && (
-              <div className={`grid ${isAdmin ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-3'} px-4 py-2 bg-[var(--ui-bg)] border-y border-[var(--ui-border)] text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase`}>
-                {isAdmin && <><span className="hidden md:inline">學生</span><span className="hidden md:inline">班級</span></>}
+              <div className="grid grid-cols-2 px-4 py-2 bg-[var(--ui-bg)] border-y border-[var(--ui-border)] text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase md:grid-cols-3">
                 <span>科目</span>
                 <span className="hidden md:inline">學期</span>
                 <span className="text-right">分數</span>
               </div>
-            )}
 
-            <div className="flex-1 overflow-y-auto pr-2 mt-2">
-              <AnimatePresence mode="wait">
-                <motion.div key={gradePage}
-                  initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.3 }}
-                >
-                  {grades.length > 0 ? (
-                    <>
-                      {grades.map(grade => (
-                        <motion.div key={grade.id}
-                          className={`${STYLES.gradeRow} ${isAdmin ? 'grid-cols-2 md:grid-cols-5' : 'grid-cols-2 md:grid-cols-3'}`}
-                          initial={lastAddedId === grade.id ? { backgroundColor: 'rgba(0,0,0,0.05)' } : false}
-                          animate={{ backgroundColor: 'transparent' }}
-                          transition={{ duration: 2 }}
-                        >
-                          {isAdmin && <>
-                            <span className="hidden md:inline text-xs font-mono font-bold text-black/50">
-                              {(grade.profiles as any)?.full_name ?? grade.student_id.substring(0, 8)}
-                            </span>
-                            <span className="hidden md:inline text-xs text-[var(--text-sub)]">
-                              {(grade.profiles as any)?.class_name ?? '–'}
-                            </span>
-                          </>}
-                          <span className={STYLES.gradeSubject}>{grade.subject}</span>
-                          <span className={`${STYLES.gradeMeta} hidden md:inline`}>{grade.term}</span>
-                          <div className="text-right">{renderScore(grade.score)}</div>
-                        </motion.div>
-                      ))}
-                      <div className="flex justify-center items-center gap-4 mt-8 pt-4 border-t border-[var(--ui-border)]">
-                        <button disabled={gradePage === 0} onClick={() => setGradePage(p => p - 1)} className={STYLES.pageBtn} aria-label="上一頁">PREV</button>
-                        <span className="text-[10px] font-mono tracking-widest uppercase">
-                          {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_GRADES))}
-                        </span>
-                        <button
-                          disabled={(gradePage + 1) * PER_PAGE_GRADES >= totalGrades}
-                          onClick={() => setGradePage(p => p + 1)} className={STYLES.pageBtn} aria-label="下一頁"
-                        >NEXT</button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className={STYLES.emptyText}>{isLoading ? '資料載入中…' : '目前尚無成績資料'}</div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+              <div className="flex-1 overflow-y-auto pr-2 mt-2">
+                <AnimatePresence mode="wait">
+                  <motion.div key={gradePage}
+                    initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.3 }}
+                  >
+                    {grades.length > 0 ? (
+                      <>
+                        {grades.map(grade => (
+                          <motion.div key={grade.id}
+                            className={`${STYLES.gradeRow} grid-cols-2 md:grid-cols-3`}
+                            initial={lastAddedId === grade.id ? { backgroundColor: 'rgba(0,0,0,0.05)' } : false}
+                            animate={{ backgroundColor: 'transparent' }}
+                            transition={{ duration: 2 }}
+                          >
+                            <span className={STYLES.gradeSubject}>{grade.subject}</span>
+                            <span className={`${STYLES.gradeMeta} hidden md:inline`}>{grade.term}</span>
+                            <div className="text-right">{renderScore(grade.score)}</div>
+                          </motion.div>
+                        ))}
+                        <div className="flex justify-center items-center gap-4 mt-8 pt-4 border-t border-[var(--ui-border)]">
+                          <button disabled={gradePage === 0} onClick={() => setGradePage(p => p - 1)} className={STYLES.pageBtn} aria-label="上一頁">PREV</button>
+                          <span className="text-[10px] font-mono tracking-widest uppercase">
+                            {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_GRADES))}
+                          </span>
+                          <button
+                            disabled={(gradePage + 1) * PER_PAGE_GRADES >= totalGrades}
+                            onClick={() => setGradePage(p => p + 1)} className={STYLES.pageBtn} aria-label="下一頁"
+                          >NEXT</button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className={STYLES.emptyText}>{isLoading ? '資料載入中…' : '目前尚無成績資料'}</div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 學生專屬：GPA + 科目數 */}
           {!isAdmin && (
@@ -671,6 +662,99 @@ export const Dashboard: React.FC = () => {
             </div>
           )}
         </main>
+
+        {/* ── Admin 全校成績管理（Bento Grid 完全外部，流式自然高度）──
+            放在 </main> 之後才能脫離 Grid 的高度約束，讓表格自由撐開，
+            Footer 也會被正確推到最底部。                                    */}
+        {isAdmin && (
+          <section className={STYLES.gradeSection} aria-label="全校成績管理">
+            {/* Section Header */}
+            <div className="flex flex-col gap-4 p-8 border-b border-[var(--ui-border)] md:flex-row md:items-center md:justify-between md:p-10">
+              <div className={STYLES.itemHeader} style={{ marginBottom: 0 }}>
+                <div className={STYLES.iconBox}><Award size={20} aria-hidden="true" /></div>
+                <div>
+                  <span className={STYLES.cardLabel}>全校成績管理</span>
+                  <p className="mt-0.5 text-[10px] text-[var(--text-sub)]">
+                    共 {totalGrades} 筆 · 第 {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_GRADES))} 頁
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsGradeOpen(true)} className={STYLES.addBtn} aria-label="新增成績">
+                <Plus size={12} aria-hidden="true" /> Add Grade
+              </button>
+            </div>
+
+            {/* Table：overflow-x-auto 讓手機可橫捲，不截斷欄位 */}
+            <div className="overflow-x-auto">
+              <AnimatePresence mode="wait">
+                <motion.div key={gradePage}
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3 }}
+                >
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-[var(--ui-bg)] border-b border-[var(--ui-border)]">
+                        <th className={STYLES.gradeTh}>學生姓名</th>
+                        <th className={STYLES.gradeTh}>學號</th>
+                        <th className={STYLES.gradeTh}>班級</th>
+                        <th className={STYLES.gradeTh}>科目</th>
+                        <th className={STYLES.gradeTh}>學期</th>
+                        <th className={`${STYLES.gradeTh} text-right`}>分數</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--ui-border)]">
+                      {grades.length > 0 ? (
+                        grades.map(grade => (
+                          <motion.tr key={grade.id}
+                            className="hover:bg-[var(--ui-bg)]/50 transition-colors"
+                            initial={lastAddedId === grade.id ? { backgroundColor: 'rgba(0,0,0,0.05)' } : false}
+                            animate={{ backgroundColor: 'transparent' }}
+                            transition={{ duration: 2 }}
+                          >
+                            <td className={STYLES.gradeTd}>
+                              <span className={STYLES.gradeSubject}>
+                                {(grade.profiles as any)?.full_name ?? '–'}
+                              </span>
+                            </td>
+                            <td className={`${STYLES.gradeTd} font-mono text-[var(--text-sub)]`}>
+                              {(grade.profiles as any)?.student_no ?? grade.student_id.substring(0, 8)}
+                            </td>
+                            <td className={`${STYLES.gradeTd} text-[var(--text-sub)]`}>
+                              {(grade.profiles as any)?.class_name ?? '–'}
+                            </td>
+                            <td className={STYLES.gradeTd}>{grade.subject}</td>
+                            <td className={`${STYLES.gradeTd} ${STYLES.gradeMeta}`}>{grade.term}</td>
+                            <td className={STYLES.gradeTdRight}>{renderScore(grade.score)}</td>
+                          </motion.tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className={STYLES.emptyText}>
+                            {isLoading ? '資料載入中…' : '目前尚無成績資料'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* 分頁控制 */}
+            {totalGrades > PER_PAGE_GRADES && (
+              <div className="flex justify-center items-center gap-4 px-6 py-6 border-t border-[var(--ui-border)]">
+                <button disabled={gradePage === 0} onClick={() => setGradePage(p => p - 1)} className={STYLES.pageBtn} aria-label="上一頁">PREV</button>
+                <span className="text-[10px] font-mono tracking-widest uppercase">
+                  {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_GRADES))}
+                </span>
+                <button
+                  disabled={(gradePage + 1) * PER_PAGE_GRADES >= totalGrades}
+                  onClick={() => setGradePage(p => p + 1)} className={STYLES.pageBtn} aria-label="下一頁"
+                >NEXT</button>
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       {/* ── Modal：新增成績 (Admin) ── */}

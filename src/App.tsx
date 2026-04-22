@@ -28,7 +28,7 @@ import { BackToTop } from './components/common/BackToTop';
 const STYLES = {
   wrapper: 'relative flex flex-col min-h-screen bg-[var(--ui-bg)] theme-transition',
   // Main - remove overflow-y-auto so window manages scrolling (required for GSAP ScrollTrigger and window.scrollTo to work correctly)
-  main: 'flex flex-col flex-1 w-full pt-32 px-2 md:px-16 lg:px-24 mx-auto max-w-[1600px]',
+  main: 'flex flex-col flex-1 w-full pt-32 pb-24 px-2 md:px-16 md:pb-32 lg:px-24 mx-auto max-w-[1600px]',
 } as const;
 
 const Home = () => (
