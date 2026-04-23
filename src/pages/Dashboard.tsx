@@ -5,7 +5,7 @@ import { LAYOUT } from '../styles/layout';
 import {
   Award, BookOpen, Clock, TrendingUp, Plus, X,
   AlertCircle, Trophy, Send, Key, Star,
-  CheckCircle2, Bell, UserPlus, Users,
+  CheckCircle2, Bell, UserPlus, Users, Monitor,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -447,6 +447,15 @@ export const Dashboard: React.FC = () => {
               <Bell size={20} className={hasUnread ? 'animate-bounce text-[var(--brand-primary)]' : 'text-black/20'} aria-hidden="true" />
               {hasUnread && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#E11D48] border-2 border-white" />}
             </div>
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/check-in')}
+                className="hidden md:flex items-center gap-2 px-4 py-2 border border-black text-[10px] font-black tracking-widest uppercase hover:bg-black hover:text-white transition-all"
+              >
+                <Monitor size={14} />
+                Check-in Mode
+              </button>
+            )}
             <button onClick={handleLogout} className={STYLES.logoutBtn} aria-label="安全登出">安全登出</button>
           </div>
         </header>
@@ -533,6 +542,8 @@ export const Dashboard: React.FC = () => {
               >
                 <Plus size={12} aria-hidden="true" /> Send Invite
               </button>
+
+
             </div>
           )}
 
@@ -619,50 +630,39 @@ export const Dashboard: React.FC = () => {
             </>
           )}
 
-          {/* 學生專屬：簽到 Strip */}
-          {!isAdmin && (
-            <div className={`${STYLES.bentoItem} ${STYLES.bentoFull}`}>
-              <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-8">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-16 h-16 rotate-3 rounded-2xl bg-black text-white shadow-xl">
-                      <Clock size={32} aria-hidden="true" />
-                    </div>
-                    <div>
-                      <span className="block mb-1 text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">Streak Status</span>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-black text-black">{attendanceCount}</span>
-                        <span className="text-xs font-bold uppercase text-black/60">Days</span>
-                      </div>
-                    </div>
+          
+        </main>
+        {/* 學生專屬：Streak Status (移至底部) */}
+        {!isAdmin && (
+          <div className={`${LAYOUT.container} mt-12 mb-20`}>
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between p-10 bg-white border border-black/5 rounded-[2rem] shadow-sm theme-transition">
+              <div className="flex items-center gap-8">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-16 h-16 rotate-3 rounded-2xl bg-black text-white shadow-xl">
+                    <Clock size={32} aria-hidden="true" />
                   </div>
-                  <div className="hidden gap-2 lg:flex" aria-hidden="true">
-                    {Array.from({ length: 7 }, (_, i) => (
-                      <div key={i} className={`w-3 h-3 rounded-full border border-black/10 ${i < (attendanceCount % 7 || (attendanceCount > 0 ? 7 : 0)) ? 'bg-black shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-transparent'}`} />
-                    ))}
+                  <div>
+                    <span className="block mb-1 text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">Streak Status</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-black text-black">{attendanceCount}</span>
+                      <span className="text-xs font-bold uppercase text-black/60">Days</span>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex flex-col items-end gap-3">
-                  <button
-                    onClick={handleCheckIn}
-                    disabled={hasCheckedInToday || isCheckingIn}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-xl text-[10px] font-black tracking-[0.3em] transition-all duration-500 ${hasCheckedInToday ? STYLES.checkInDone : STYLES.checkInActive}`}
-                    aria-label={hasCheckedInToday ? '今日已完成簽到' : '立即簽到'}
-                  >
-                    {hasCheckedInToday
-                      ? <><CheckCircle2 size={16} className="text-green-500" aria-hidden="true" /> COMPLETED TODAY</>
-                      : <><Send size={14} aria-hidden="true" /> SIGN IN NOW</>}
-                  </button>
-                  <p className="text-[9px] font-bold tracking-[0.1em] uppercase text-black/30">
-                    {hasCheckedInToday ? '已登載今日學習軌跡' : '簽到領取學習點數'}
-                  </p>
+                <div className="hidden gap-2 lg:flex" aria-hidden="true">
+                  {Array.from({ length: 7 }, (_, i) => (
+                    <div key={i} className={`w-3 h-3 rounded-full border border-black/10 ${i < (attendanceCount % 7 || (attendanceCount > 0 ? 7 : 0)) ? 'bg-black shadow-[0_0_10px_rgba(0,0,0,0.2)]' : 'bg-transparent'}`} />
+                  ))}
                 </div>
               </div>
+              <div className="flex flex-col items-end">
+                <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/20">
+                  學習軌跡由櫃檯系統自動登載
+                </p>
+              </div>
             </div>
-          )}
-        </main>
-
+          </div>
+        )}
         {/* ── Admin 全校成績管理（Bento Grid 完全外部，流式自然高度）──
             放在 </main> 之後才能脫離 Grid 的高度約束，讓表格自由撐開，
             Footer 也會被正確推到最底部。                                    */}

@@ -17,6 +17,7 @@ import { News } from './pages/News';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Activate } from './pages/Activate';
+import { CheckIn } from './pages/CheckIn';
 import { ScrollToAnchor } from './components/common/ScrollToAnchor';
 import { BackToTop } from './components/common/BackToTop';
 
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/check-in" element={<CheckIn />} />
         </Routes>
         
         {/* Footer Section */}
