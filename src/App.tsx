@@ -34,22 +34,22 @@ const STYLES = {
 
 const Home = () => (
   <>
-    {/* Hsinyu Hero Section */}
+    {/* 欣育英雄區塊 */}
     <Hero />
     
-    {/* Core Advantages Section */}
+    {/* 核心優勢區塊 */}
     <AdvantageList />
     
-    {/* Course List Section (preview) */}
+    {/* 課程列表區塊 (預覽) */}
     <CourseList />
 
     {/* 活動錦集元件取代原作品列表 */}
     <WorkList />
 
-    {/* Connect & Consult Form Section */}
+    {/* 聯繫與諮詢表單區塊 */}
     <ContactForm />
 
-    {/* Marquee Vision Background Section */}
+    {/* 跑馬燈願景背景區塊 */}
     <MarqueeVision />
   </>
 );
@@ -76,7 +76,7 @@ export default function App() {
           <Route path="/check-in" element={<CheckIn />} />
         </Routes>
         
-        {/* Footer Section */}
+        {/* 頁腳區塊 */}
         <Footer />
       </main>
       

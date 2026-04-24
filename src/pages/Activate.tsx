@@ -96,7 +96,7 @@ export const Activate: React.FC = () => {
             <div className={STYLES.iconWrap}>
               <Loader2 className="animate-spin text-black" size={32} />
             </div>
-            <h1 className={STYLES.title}>PROCESSING</h1>
+            <h1 className={STYLES.title}>處理中</h1>
           </div>
         )}
 
@@ -104,14 +104,14 @@ export const Activate: React.FC = () => {
         {status === 'form' && (
           <>
             <div className={STYLES.iconWrap}><Lock size={32} /></div>
-            <h1 className={STYLES.title}>SET PASSWORD</h1>
+            <h1 className={STYLES.title}>設定密碼</h1>
             <p className={STYLES.desc}>請為您的帳號設定初始登入密碼。</p>
             
             <form onSubmit={handleActivate} className={STYLES.form}>
               <div className={STYLES.inputGroup}>
                 <input
                   type="password"
-                  placeholder="NEW PASSWORD"
+                  placeholder="新密碼"
                   className={STYLES.input}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -119,7 +119,7 @@ export const Activate: React.FC = () => {
                 />
               </div>
               {errorMsg && <div className={STYLES.errorBox}>{errorMsg}</div>}
-              <button type="submit" className={STYLES.button}>ACTIVATE</button>
+              <button type="submit" className={STYLES.button}>啟用帳號</button>
             </form>
           </>
         )}
@@ -128,7 +128,7 @@ export const Activate: React.FC = () => {
         {status === 'success' && (
           <div className="flex flex-col items-center">
             <div className={STYLES.iconWrap}><CheckCircle2 size={32} /></div>
-            <h1 className={STYLES.title}>SUCCESS</h1>
+            <h1 className={STYLES.title}>成功</h1>
             <p className={STYLES.desc}>密碼設定成功，即將跳轉...</p>
           </div>
         )}
@@ -139,9 +139,9 @@ export const Activate: React.FC = () => {
             <div className={`${STYLES.iconWrap} border-red-500`}>
               <AlertCircle size={32} className="text-red-500" />
             </div>
-            <h1 className={STYLES.title}>ERROR</h1>
+            <h1 className={STYLES.title}>錯誤</h1>
             <p className={STYLES.desc}>{errorMsg}</p>
-            <button onClick={() => navigate('/login')} className={STYLES.button}>BACK TO LOGIN</button>
+            <button onClick={() => navigate('/login')} className={STYLES.button}>返回登入頁</button>
           </div>
         )}
 

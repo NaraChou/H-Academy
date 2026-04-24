@@ -61,7 +61,7 @@ export const Login: React.FC = () => {
 
       if (error) {
         // Detailed error check for unconfirmed email
-        if (error.message.includes('Email not confirmed')) {
+        if (error.message.includes('信箱未驗證')) {
           setErrorMsg('您的信箱尚未驗證。請檢查您的收件夾並點擊驗證連結。');
           setIsLoading(false);
           return;
@@ -74,7 +74,7 @@ export const Login: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      if (err.message.includes('Invalid login credentials')) {
+      if (err.message.includes('無效的登入憑證')) {
         setErrorMsg('信箱或密碼錯誤，請重新檢查。');
       } else {
         setErrorMsg(err.message || '登入失敗，請稍後再試。');
@@ -87,7 +87,7 @@ export const Login: React.FC = () => {
   return (
     <section className={STYLES.wrapper} aria-label="登入頁面">
       <div className={STYLES.card}>
-        <h1 className={STYLES.title}>Welcome Back</h1>
+        <h1 className={STYLES.title}>歡迎回來</h1>
         <p className={STYLES.subtitle}>請登入以繼續探索</p>
 
         {errorMsg && (
@@ -98,21 +98,21 @@ export const Login: React.FC = () => {
 
         <form className={STYLES.form} onSubmit={handleLogin} noValidate>
           <div className={STYLES.inputGroup}>
-            <label htmlFor="email" className={STYLES.label}>Email</label>
+            <label htmlFor="email" className={STYLES.label}>電子郵件</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={STYLES.input}
-              placeholder="hello@example.com"
+              placeholder="您的電子郵件"
               required
               disabled={isLoading}
             />
           </div>
 
           <div className={STYLES.inputGroup}>
-            <label htmlFor="password" className={STYLES.label}>Password</label>
+            <label htmlFor="password" className={STYLES.label}>密碼</label>
             <input
               id="password"
               type="password"
@@ -131,7 +131,7 @@ export const Login: React.FC = () => {
             disabled={isLoading}
             aria-busy={isLoading}
           >
-            {isLoading ? 'SIGNING IN...' : 'SIGN IN'}
+            {isLoading ? '登入中...' : '登入'}
           </button>
         </form>
       </div>

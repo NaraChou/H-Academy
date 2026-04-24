@@ -85,7 +85,7 @@ export const CheckIn = () => {
 
       if (checkInError) throw checkInError;
       setStatus('success');
-      setMessage('打卡成功！歡迎來到欣育。');
+      setMessage('簽到成功！歡迎來到欣育。');
     } catch (err) {
       setStatus('error');
       setMessage('系統連線異常，請聯繫管理員。');
@@ -101,8 +101,8 @@ export const CheckIn = () => {
       >
         <div className={STYLES.header}>
           <div>
-            <h1 className={STYLES.title}>Check-in</h1>
-            <p className={STYLES.subtitle}>櫃檯自助打卡系統</p>
+            <h1 className={STYLES.title}>學生簽到</h1>
+            <p className={STYLES.subtitle}>櫃檯自助簽到系統</p>
           </div>
           <button onClick={() => navigate('/dashboard')} className="p-4 bg-neutral-50 rounded-2xl hover:bg-black hover:text-white transition-all">
             <ArrowLeft size={20} />
@@ -129,7 +129,7 @@ export const CheckIn = () => {
               {num}
             </button>
           ))}
-          <button onClick={handleClear} className={STYLES.actionKey}>Clear</button>
+          <button onClick={handleClear} className={STYLES.actionKey}>清除</button>
           <button onClick={() => handleKeyPress('0')} className={STYLES.key}>0</button>
           <button onClick={handleDelete} className={STYLES.actionKey}>
             <Delete size={24} />
@@ -142,7 +142,7 @@ export const CheckIn = () => {
           className={STYLES.submitBtn}
         >
           {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <UserCheck size={20} />}
-          {isSubmitting ? 'Processing...' : 'Confirm Check-in'}
+          {isSubmitting ? '處理中...' : '確認簽到'}
         </button>
       </motion.div>
 
@@ -163,19 +163,19 @@ export const CheckIn = () => {
                     className="absolute inset-0 bg-green-500/10 rounded-full -z-10"
                   />
                 </div>
-                <h2 className={STYLES.statusTitle}>Check-in Success</h2>
+                <h2 className={STYLES.statusTitle}>簽到成功</h2>
                 <p className={STYLES.statusText}><span className="text-black font-black text-xl block mb-2">{studentName}</span>{message}</p>
               </>
             ) : (
               <>
                 <AlertCircle className="w-32 h-32 text-red-500 mb-8" />
-                <h2 className={STYLES.statusTitle}>Check-in Failed</h2>
+                <h2 className={STYLES.statusTitle}>簽到失敗</h2>
                 <p className={STYLES.statusText}>{message}</p>
               </>
             )}
             <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-neutral-300 uppercase">
               <div className="w-8 h-[1px] bg-neutral-200" />
-              Auto Resetting
+              自動重置中
               <div className="w-8 h-[1px] bg-neutral-200" />
             </div>
           </motion.div>
