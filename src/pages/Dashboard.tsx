@@ -348,6 +348,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // 修正 fetchStudentAttendance 中的日期範圍判定
   const fetchStudentAttendance = async (studentId: string) => {
     if (!supabase) return;
     const { count, error } = await supabase
@@ -358,8 +359,16 @@ export const Dashboard: React.FC = () => {
     if (!error) setAttendanceCount(count ?? 0);
 
     const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
-    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+    // 轉換為台北/北京時間的日期字串 (YYYY-MM-DD)
+    const localDate = new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(now).replace(/\//g, '-');
+    const dayStart = `${localDate}T00:00:00+08:00`;
+    const dayEnd = `${localDate}T23:59:59+08:00`;
+
     const { data: todayLogs } = await supabase
       .from('attendance_logs')
       .select('id')
