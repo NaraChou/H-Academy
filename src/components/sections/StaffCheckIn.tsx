@@ -16,12 +16,12 @@ interface StaffCheckInProps {
   onToast?: (message: string, type?: ToastType) => void;
 }
 
-// 地點修改：406臺中市北屯區中清東一街31號
-// 經緯度參考：24.1972742, 120.719938
+// 地點修改：北屯區水湳里018鄰中清東一街３１之４號
+// 經緯度參考：24.1751304214824, 120.67276787047567
 // 校區範圍可依需求調整（100 公尺）
 const SCHOOL_LOCATION = {
-  lat: 24.1972742,
-  lng: 120.719938,
+  lat: 24.1751304214824,
+  lng: 120.67276787047567,
   radiusMeters: 100,
 };
 
@@ -175,7 +175,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
         <MapPin size={14} />
         {distanceMeters !== null ? (
           <span>
-            目前距離校區（406臺中市北屯區中清東一街31號）{Math.round(distanceMeters)}公尺（範圍 {SCHOOL_LOCATION.radiusMeters}公尺）
+            目前距離校區（北屯區水湳里018鄰中清東一街３１之４號）{Math.round(distanceMeters)}公尺（範圍 {SCHOOL_LOCATION.radiusMeters}公尺）
           </span>
         ) : (
           <span>尚未取得定位</span>
