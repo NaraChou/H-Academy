@@ -16,9 +16,12 @@ interface StaffCheckInProps {
   onToast?: (message: string, type?: ToastType) => void;
 }
 
+// 地點修改：406臺中市北屯區中清東一街31號
+// 經緯度參考：24.1972742, 120.719938
+// 校區範圍可依需求調整（100 公尺）
 const SCHOOL_LOCATION = {
-  lat: 25.0478,
-  lng: 121.517,
+  lat: 24.1972742,
+  lng: 120.719938,
   radiusMeters: 100,
 };
 
@@ -153,7 +156,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
     <div className={STYLES.root}>
       <div className="mb-3 md:mb-2 flex items-center justify-between">
         <span className="text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">
-          Staff Attendance
+          員工打卡
         </span>
         <span
           className={`${STYLES.statusBadge} ${
@@ -164,7 +167,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
                 : 'border-red-500 text-red-500'
           }`}
         >
-          {isLocating ? 'Locating' : isInRange ? 'In Range' : 'Out Of Range'}
+          {isLocating ? '定位中' : isInRange ? '校區範圍內' : '超出範圍'}
         </span>
       </div>
 
@@ -172,7 +175,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
         <MapPin size={14} />
         {distanceMeters !== null ? (
           <span>
-            目前距離校區 {Math.round(distanceMeters)}m（範圍 {SCHOOL_LOCATION.radiusMeters}m）
+            目前距離校區（406臺中市北屯區中清東一街31號）{Math.round(distanceMeters)}公尺（範圍 {SCHOOL_LOCATION.radiusMeters}公尺）
           </span>
         ) : (
           <span>尚未取得定位</span>
@@ -190,7 +193,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
           }`}
         >
           {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
-          <span>Clock In</span>
+          <span>上班打卡</span>
         </button>
 
         <button
@@ -207,7 +210,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
           ) : (
             <CheckCircle2 size={14} />
           )}
-          <span>Clock Out</span>
+          <span>下班打卡</span>
         </button>
       </div>
 
@@ -234,7 +237,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
         className="mt-2 inline-flex items-center gap-1 text-[8px] font-black tracking-[0.16em] uppercase text-black/30 hover:text-black transition-colors"
       >
         <RefreshCcw size={11} />
-        Refresh GPS
+        重新取得定位
       </button>
     </div>
   );

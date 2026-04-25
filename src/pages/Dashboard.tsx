@@ -78,6 +78,7 @@ interface ToastState {
 }
 
 const STYLES = {
+  ...LAYOUT,
   wrapper:
     'flex flex-col w-full px-1 py-10 bg-[var(--ui-bg)] theme-transition md:px-6 md:pt-12 md:pb-8',
   container: LAYOUT.container,
@@ -151,11 +152,12 @@ const EMPTY_NEW_GRADE: GradeFormState = {
   exam_date: '',
 };
 
+// 角色中文標籤
 const getRoleLabel = (role?: UserRole) => {
-  if (role === 'admin') return 'Principal';
-  if (role === 'teacher') return 'Teacher';
-  if (role === 'staff') return 'Staff';
-  return 'Student';
+  if (role === 'admin') return '校長';
+  if (role === 'teacher') return '教師';
+  if (role === 'staff') return '教職員';
+  return '學生';
 };
 
 const formatDate = (dateStr: string | null) => {
@@ -254,14 +256,16 @@ export const Dashboard: React.FC = () => {
     return attendanceCount % 7 || 7;
   }, [attendanceCount]);
 
-  const showToast = (message: string, type: ToastType = 'success') => {
-    setToast({ message, type });
+  // ------ 中文提示訊息 -------
+  const showToast = (messageZh: string, type: ToastType = 'success') => {
+    setToast({ message: messageZh, type });
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => {
       setToast(null);
       toastTimerRef.current = null;
     }, 2800);
   };
+  // -------------------------
 
   useEffect(() => {
     return () => {
@@ -280,7 +284,7 @@ export const Dashboard: React.FC = () => {
       .order('created_at', { ascending: false })
       .range(from, to);
     if (error) {
-      showToast(`Failed to load announcements: ${error.message}`, 'error');
+      showToast(`載入公告失敗：${error.message}`, 'error');
       return;
     }
     setAnnouncements((data ?? []) as Announcement[]);
@@ -301,7 +305,7 @@ export const Dashboard: React.FC = () => {
 
     const { data, error, count } = await query.order('graded_at', { ascending: false }).range(from, to);
     if (error) {
-      showToast(`Failed to load grades: ${error.message}`, 'error');
+      showToast(`載入成績失敗：${error.message}`, 'error');
       return;
     }
 
@@ -460,7 +464,7 @@ export const Dashboard: React.FC = () => {
     const title = newAnnounce.title.trim();
     const content = newAnnounce.content.trim();
     if (!title || !content) {
-      showToast('Please fill in announcement title and content.', 'error');
+      showToast('請填寫公告標題與內容。', 'error');
       return;
     }
 
@@ -468,27 +472,27 @@ export const Dashboard: React.FC = () => {
       { title, content, priority: newAnnounce.priority },
     ]);
     if (error) {
-      showToast(`Failed to create announcement: ${error.message}`, 'error');
+      showToast(`發佈公告失敗：${error.message}`, 'error');
       return;
     }
 
     setIsAnnounceCreateOpen(false);
     setNewAnnounce({ title: '', content: '', priority: false });
-    showToast('Announcement created.');
+    showToast('公告已發佈！');
     if (announcePage !== 0) setAnnouncePage(0);
     else fetchAnnouncements();
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
     if (!supabase || !isAdmin) return;
-    if (!window.confirm('Delete this announcement?')) return;
+    if (!window.confirm('確定要刪除此公告嗎？')) return;
     const { error } = await supabase.from('announcements').delete().eq('id', id);
     if (error) {
-      showToast(`Failed to delete announcement: ${error.message}`, 'error');
+      showToast(`刪除公告失敗：${error.message}`, 'error');
       return;
     }
 
-    showToast('Announcement deleted.');
+    showToast('公告已刪除。');
     setViewingAnnounce(null);
     if (announcements.length === 1 && announcePage > 0) setAnnouncePage((prev) => prev - 1);
     else fetchAnnouncements();
@@ -503,7 +507,7 @@ export const Dashboard: React.FC = () => {
     const term = newGrade.term.trim() || '113-2';
     const score = Number(newGrade.score);
     if (!studentId || !subject || Number.isNaN(score)) {
-      showToast('Please fill in complete grade data.', 'error');
+      showToast('請完整輸入成績資料。', 'error');
       return;
     }
 
@@ -525,14 +529,14 @@ export const Dashboard: React.FC = () => {
     setIsGradeSubmitting(false);
 
     if (error) {
-      showToast(`Failed to add grade: ${error.message}`, 'error');
+      showToast(`新增成績失敗：${error.message}`, 'error');
       return;
     }
 
     setIsGradeCreateOpen(false);
     setNewGrade(EMPTY_NEW_GRADE);
     setLastUpdatedGradeId((data as any)?.id ?? null);
-    showToast('Grade added.');
+    showToast('成績新增成功！');
     window.setTimeout(() => setLastUpdatedGradeId(null), 3000);
     if (gradePage !== 0) setGradePage(0);
     else fetchGrades();
@@ -547,7 +551,7 @@ export const Dashboard: React.FC = () => {
     const term = editingGrade.term.trim();
     const score = Number(editingGrade.score);
     if (!subject || !term || Number.isNaN(score)) {
-      showToast('Please fill in complete grade data.', 'error');
+      showToast('請完整輸入成績資料。', 'error');
       return;
     }
 
@@ -564,26 +568,26 @@ export const Dashboard: React.FC = () => {
     setIsGradeSubmitting(false);
 
     if (error) {
-      showToast(`Failed to update grade: ${error.message}`, 'error');
+      showToast(`更新成績失敗：${error.message}`, 'error');
       return;
     }
 
     setLastUpdatedGradeId(editingGrade.id);
     setEditingGrade(null);
-    showToast('Grade updated.');
+    showToast('成績已更新！');
     window.setTimeout(() => setLastUpdatedGradeId(null), 3000);
     fetchGrades();
   };
 
   const handleDeleteGrade = async (gradeId: number | string) => {
     if (!supabase || !canManageGrades) return;
-    if (!window.confirm('Delete this grade?')) return;
+    if (!window.confirm('確定要刪除此成績嗎？')) return;
     const { error } = await supabase.from('grade_records').delete().eq('id', gradeId);
     if (error) {
-      showToast(`Failed to delete grade: ${error.message}`, 'error');
+      showToast(`刪除成績失敗：${error.message}`, 'error');
       return;
     }
-    showToast('Grade deleted.');
+    showToast('成績已刪除。');
     if (grades.length === 1 && gradePage > 0) setGradePage((prev) => prev - 1);
     else fetchGrades();
   };
@@ -605,7 +609,7 @@ export const Dashboard: React.FC = () => {
 
     if (!payload.email) {
       setIsInviting(false);
-      showToast('Please enter student email.', 'error');
+      showToast('請輸入學生 Email。', 'error');
       return;
     }
 
@@ -618,15 +622,15 @@ export const Dashboard: React.FC = () => {
           const detailBody = await context.json().catch(() => null);
           detailMessage = detailBody?.error || '';
         }
-        throw new Error(detailMessage || error.message || 'Invite failed');
+        throw new Error(detailMessage || error.message || '邀請發送失敗');
       }
 
-      const successMessage = (data as any)?.message || `Invite sent: ${payload.email}`;
+      const successMessage = (data as any)?.message || `邀請已發送：${payload.email}`;
       setInviteSuccess(successMessage);
       setNewInvite({ email: '', full_name: '', class_name: '', student_no: '' });
-      showToast('Invite sent.');
+      showToast('邀請發送成功！');
     } catch (error: any) {
-      const message = error?.message || 'Invite failed. Please try again.';
+      const message = error?.message || '邀請失敗，請重試。';
       setInviteError(message);
       showToast(message, 'error');
     } finally {
@@ -634,17 +638,18 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  // 角色歡迎標題（繁體中文）
   const roleTitle = isAdmin
-    ? 'Hello Principal'
+    ? '您好，校長'
     : isTeacher
-      ? 'Hello Teacher'
+      ? '您好，教師'
       : isStaff
-        ? 'Hello Staff'
-        : 'Welcome Back';
+        ? '您好，教職員'
+        : '歡迎回來';
 
   if (isLoading) {
     return (
-      <section className={STYLES.wrapper} aria-label="Dashboard">
+      <section className={STYLES.wrapper} aria-label="儀表板">
         <div className={STYLES.container}>
           <div className="flex min-h-[50vh] items-center justify-center">
             <Loader2 size={32} className="animate-spin text-black" />
@@ -655,7 +660,7 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <section className={STYLES.wrapper} aria-label="Dashboard">
+    <section className={STYLES.wrapper} aria-label="儀表板">
       <div className={STYLES.container}>
         <header className={STYLES.header}>
           <div className="flex items-center gap-4">
@@ -665,7 +670,10 @@ export const Dashboard: React.FC = () => {
             <div>
               <h1 className={STYLES.title}>{roleTitle}</h1>
               <p className={STYLES.subtitle}>
-                {profile?.full_name ?? user?.email?.split('@')[0]} , current role: {getRoleLabel(role)}
+                {isStudent && profile?.student_no && (
+                  <span className="mr-2 font-mono text-[var(--brand-primary)]">{profile.student_no}</span>
+                )}
+                {profile?.full_name ?? user?.email?.split('@')[0]}，目前身份：{getRoleLabel(role)}
               </p>
             </div>
           </div>
@@ -688,12 +696,12 @@ export const Dashboard: React.FC = () => {
                 className="hidden md:flex items-center gap-2 px-4 py-2 border border-black text-[10px] font-black tracking-widest uppercase hover:bg-black hover:text-white transition-all"
               >
                 <Monitor size={14} />
-                Check-in Mode
+                打卡模式
               </button>
             )}
 
-            <button onClick={handleLogout} className={STYLES.logoutBtn} aria-label="Sign out">
-              SIGN OUT
+            <button onClick={handleLogout} className={STYLES.logoutBtn} aria-label="登出">
+              登出
             </button>
           </div>
         </header>
@@ -706,14 +714,14 @@ export const Dashboard: React.FC = () => {
                   <Clock size={20} aria-hidden="true" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={STYLES.cardLabel}>Announcements</span>
+                  <span className={STYLES.cardLabel}>公告</span>
                   {hasUnread && <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-pulse" />}
                 </div>
               </div>
 
               {isAdmin && (
                 <button onClick={() => setIsAnnounceCreateOpen(true)} className={STYLES.addBtn}>
-                  <Plus size={12} aria-hidden="true" /> Post
+                  <Plus size={12} aria-hidden="true" /> 發佈
                 </button>
               )}
             </div>
@@ -747,7 +755,7 @@ export const Dashboard: React.FC = () => {
                           >
                             <div className="flex flex-col">
                               <div className="flex items-center">
-                                {announcement.priority && <span className={STYLES.priorityTag}>TOP</span>}
+                                {announcement.priority && <span className={STYLES.priorityTag}>置頂</span>}
                                 <span className={STYLES.announceTitle}>{announcement.title}</span>
                               </div>
                               <span className={STYLES.announceDate}>{formatDate(announcement.created_at)}</span>
@@ -763,7 +771,7 @@ export const Dashboard: React.FC = () => {
                           onClick={() => setAnnouncePage((prev) => prev - 1)}
                           className={STYLES.pageBtn}
                         >
-                          PREV
+                          上一頁
                         </button>
                         <span className="text-[10px] font-mono tracking-widest uppercase">
                           {announcePage + 1} / {Math.max(1, Math.ceil(totalAnnounce / PER_PAGE_ANNOUNCE))}
@@ -773,12 +781,12 @@ export const Dashboard: React.FC = () => {
                           onClick={() => setAnnouncePage((prev) => prev + 1)}
                           className={STYLES.pageBtn}
                         >
-                          NEXT
+                          下一頁
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className={STYLES.emptyText}>No announcements.</div>
+                    <div className={STYLES.emptyText}>目前沒有公告。</div>
                   )}
                 </motion.div>
               </AnimatePresence>
@@ -791,10 +799,10 @@ export const Dashboard: React.FC = () => {
                 <div className={STYLES.iconBox}>
                   <UserPlus size={20} aria-hidden="true" />
                 </div>
-                <span className={STYLES.cardLabel}>Invite Student</span>
+                <span className={STYLES.cardLabel}>邀請學生</span>
               </div>
               <p className="my-4 text-xs leading-relaxed text-[var(--text-sub)] theme-transition">
-                Invite students with email, full name, class, and student number.
+                以 email、學生姓名、班級、學號邀請學生加入帳號。
               </p>
               <button
                 onClick={() => {
@@ -804,7 +812,7 @@ export const Dashboard: React.FC = () => {
                 }}
                 className={STYLES.addBtn}
               >
-                <Plus size={12} aria-hidden="true" /> Send Invite
+                <Plus size={12} aria-hidden="true" /> 發送邀請
               </button>
             </section>
           )}
@@ -822,15 +830,15 @@ export const Dashboard: React.FC = () => {
                   <div className={STYLES.iconBox}>
                     <Award size={20} aria-hidden="true" />
                   </div>
-                  <span className={STYLES.cardLabel}>My Grades</span>
+                  <span className={STYLES.cardLabel}>學期成績單</span>
                 </div>
               </div>
 
               <div className="hidden md:grid md:grid-cols-4 px-4 py-2 bg-[var(--ui-bg)] border-y border-[var(--ui-border)] text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase">
-                <span>Subject</span>
-                <span>Term</span>
-                <span>Date</span>
-                <span className="text-right">Score</span>
+                <span>科目</span>
+                <span>學期</span>
+                <span>測驗日期</span>
+                <span className="text-right">分數</span>
               </div>
 
               <div className="flex-1 overflow-y-auto pr-2 mt-2">
@@ -872,7 +880,7 @@ export const Dashboard: React.FC = () => {
                         ))}
                       </>
                     ) : (
-                      <div className={STYLES.emptyText}>No grade records.</div>
+                      <div className={STYLES.emptyText}>目前沒有成績資料。</div>
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -885,7 +893,7 @@ export const Dashboard: React.FC = () => {
                     onClick={() => setGradePage((prev) => prev - 1)}
                     className={STYLES.pageBtn}
                   >
-                    PREV
+                    上一頁
                   </button>
                   <span className="text-[10px] font-mono tracking-widest uppercase">
                     {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_STUDENT_GRADES))}
@@ -895,7 +903,7 @@ export const Dashboard: React.FC = () => {
                     onClick={() => setGradePage((prev) => prev + 1)}
                     className={STYLES.pageBtn}
                   >
-                    NEXT
+                    下一頁
                   </button>
                 </div>
               )}
@@ -909,12 +917,12 @@ export const Dashboard: React.FC = () => {
                   <div className={STYLES.iconBox}>
                     <BookOpen size={20} aria-hidden="true" />
                   </div>
-                  <span className={STYLES.cardLabel}>Average Score</span>
+                  <span className={STYLES.cardLabel}>平均積分 (GPA)</span>
                 </div>
                 <div>
                   <div className="text-5xl font-black text-[var(--brand-primary)] mb-2">{averageScore}</div>
                   <p className="text-xs font-light tracking-widest uppercase text-[var(--text-sub)]">
-                    All records average
+                    全部記錄平均分數
                   </p>
                 </div>
               </section>
@@ -924,14 +932,14 @@ export const Dashboard: React.FC = () => {
                   <div className={STYLES.iconBox}>
                     <Clock size={20} aria-hidden="true" />
                   </div>
-                  <span className={STYLES.cardLabel}>Today Attendance</span>
+                  <span className={STYLES.cardLabel}>今日出勤</span>
                 </div>
                 <div>
                   <div className="text-3xl font-black text-[var(--brand-primary)] mb-2">
-                    {hasCheckedInToday ? 'Done' : 'Pending'}
+                    {hasCheckedInToday ? '已打卡' : '尚未打卡'}
                   </div>
                   <p className="text-xs font-light tracking-widest uppercase text-[var(--text-sub)]">
-                    Total attendance days: {attendanceCount}
+                    累計出勤天數：{attendanceCount}
                   </p>
                 </div>
               </section>
@@ -947,15 +955,15 @@ export const Dashboard: React.FC = () => {
                   <Award size={20} aria-hidden="true" />
                 </div>
                 <div>
-                  <span className={STYLES.cardLabel}>School Grade Management</span>
+                  <span className={STYLES.cardLabel}>成績管理</span>
                   <p className="mt-1 text-[10px] text-[var(--text-sub)]">
-                    {totalGrades} records, page {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}
+                    共 {totalGrades} 筆，頁次 {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}
                   </p>
                 </div>
               </div>
 
               <button onClick={() => setIsGradeCreateOpen(true)} className={STYLES.addBtn}>
-                <Plus size={12} aria-hidden="true" /> Add Grade
+                <Plus size={12} aria-hidden="true" /> 新增成績
               </button>
             </div>
 
@@ -963,14 +971,14 @@ export const Dashboard: React.FC = () => {
               <table className="w-full border-collapse min-w-[1020px]">
                 <thead>
                   <tr className="bg-[var(--ui-bg)] border-b border-[var(--ui-border)]">
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Name</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Student No</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Class</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Subject</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Term</th>
-                    <th className="px-6 py-4 text-right text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Score</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Exam Date</th>
-                    <th className="px-6 py-4 text-right text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">Actions</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">姓名</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">學號</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">班級</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">科目</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">學期</th>
+                    <th className="px-6 py-4 text-right text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">分數</th>
+                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">測驗日期</th>
+                    <th className="px-6 py-4 text-right text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ui-border)]">
@@ -1016,7 +1024,7 @@ export const Dashboard: React.FC = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className={STYLES.emptyText}>No grade data.</td>
+                      <td colSpan={8} className={STYLES.emptyText}>目前沒有成績資料。</td>
                     </tr>
                   )}
                 </tbody>
@@ -1029,7 +1037,7 @@ export const Dashboard: React.FC = () => {
                 onClick={() => setGradePage((prev) => prev - 1)}
                 className={STYLES.pageBtn}
               >
-                PREV
+                上一頁
               </button>
               <span className="text-[10px] font-mono tracking-widest uppercase">
                 {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}
@@ -1039,7 +1047,7 @@ export const Dashboard: React.FC = () => {
                 onClick={() => setGradePage((prev) => prev + 1)}
                 className={STYLES.pageBtn}
               >
-                NEXT
+                下一頁
               </button>
             </div>
           </section>
@@ -1055,11 +1063,11 @@ export const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <span className="block mb-1 text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">
-                      Streak Status
+                      連續打卡
                     </span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-4xl font-black text-black">{attendanceCount}</span>
-                      <span className="text-xs font-bold uppercase text-black/60">Days</span>
+                      <span className="text-xs font-bold uppercase text-black/60">天</span>
                     </div>
                   </div>
                 </div>
@@ -1078,7 +1086,7 @@ export const Dashboard: React.FC = () => {
 
               <div className="flex flex-col items-end">
                 <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/20">
-                  Keep going, steady progress
+                  持續努力，穩定進步
                 </p>
               </div>
             </div>
@@ -1091,7 +1099,7 @@ export const Dashboard: React.FC = () => {
           <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
-              <span className="text-xl font-black tracking-widest text-black">ADD GRADE</span>
+              <span className="text-xl font-black tracking-widest text-black">新增成績</span>
               <button onClick={() => setIsGradeCreateOpen(false)} className="p-2 hover:rotate-90 transition-transform duration-500">
                 <X size={20} aria-hidden="true" />
               </button>
@@ -1099,11 +1107,11 @@ export const Dashboard: React.FC = () => {
 
             <form onSubmit={handleAddGrade}>
               {[
-                { id: 'g-uid', label: 'Student UUID *', name: 'target_student_id', type: 'text', ph: 'profiles.id' },
-                { id: 'g-subject', label: 'Subject *', name: 'subject', type: 'text', ph: 'Math' },
-                { id: 'g-term', label: 'Term *', name: 'term', type: 'text', ph: '113-2' },
-                { id: 'g-score', label: 'Score (0-100) *', name: 'score', type: 'number', ph: '85' },
-                { id: 'g-date', label: 'Exam Date', name: 'exam_date', type: 'date', ph: '' },
+                { id: 'g-uid', label: '學生 UUID *', name: 'target_student_id', type: 'text', ph: 'profiles.id' },
+                { id: 'g-subject', label: '科目 *', name: 'subject', type: 'text', ph: '數學' },
+                { id: 'g-term', label: '學期 *', name: 'term', type: 'text', ph: '113-2' },
+                { id: 'g-score', label: '分數 (0-100) *', name: 'score', type: 'number', ph: '85' },
+                { id: 'g-date', label: '測驗日期', name: 'exam_date', type: 'date', ph: '' },
               ].map((field) => (
                 <div key={field.id}>
                   <label className={STYLES.formLabel} htmlFor={field.id}>{field.label}</label>
@@ -1123,7 +1131,7 @@ export const Dashboard: React.FC = () => {
 
               <button type="submit" disabled={isGradeSubmitting} className={STYLES.submitBtn}>
                 <Send size={14} aria-hidden="true" />
-                {isGradeSubmitting ? 'SUBMITTING...' : 'CONFIRM DATA'}
+                {isGradeSubmitting ? '送出中...' : '確認資料'}
               </button>
             </form>
           </div>
@@ -1135,14 +1143,14 @@ export const Dashboard: React.FC = () => {
           <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
-              <span className="text-xl font-black tracking-widest text-black">EDIT GRADE</span>
+              <span className="text-xl font-black tracking-widest text-black">編輯成績</span>
               <button onClick={() => setEditingGrade(null)} className="p-2 hover:rotate-90 transition-transform duration-500">
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
 
             <form onSubmit={handleUpdateGrade}>
-              <label className={STYLES.formLabel} htmlFor="edit-subject">Subject *</label>
+              <label className={STYLES.formLabel} htmlFor="edit-subject">科目 *</label>
               <input
                 id="edit-subject"
                 type="text"
@@ -1152,7 +1160,7 @@ export const Dashboard: React.FC = () => {
                 onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, subject: event.target.value } : prev))}
               />
 
-              <label className={STYLES.formLabel} htmlFor="edit-term">Term *</label>
+              <label className={STYLES.formLabel} htmlFor="edit-term">學期 *</label>
               <input
                 id="edit-term"
                 type="text"
@@ -1162,7 +1170,7 @@ export const Dashboard: React.FC = () => {
                 onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, term: event.target.value } : prev))}
               />
 
-              <label className={STYLES.formLabel} htmlFor="edit-score">Score (0-100) *</label>
+              <label className={STYLES.formLabel} htmlFor="edit-score">分數 (0-100) *</label>
               <input
                 id="edit-score"
                 type="number"
@@ -1174,7 +1182,7 @@ export const Dashboard: React.FC = () => {
                 onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, score: Number(event.target.value) } : prev))}
               />
 
-              <label className={STYLES.formLabel} htmlFor="edit-exam-date">Exam Date</label>
+              <label className={STYLES.formLabel} htmlFor="edit-exam-date">測驗日期</label>
               <input
                 id="edit-exam-date"
                 type="date"
@@ -1185,7 +1193,7 @@ export const Dashboard: React.FC = () => {
 
               <button type="submit" disabled={isGradeSubmitting} className={STYLES.submitBtn}>
                 <Send size={14} aria-hidden="true" />
-                {isGradeSubmitting ? 'SAVING...' : 'SAVE CHANGES'}
+                {isGradeSubmitting ? '儲存中...' : '儲存修改'}
               </button>
             </form>
           </div>
@@ -1216,11 +1224,11 @@ export const Dashboard: React.FC = () => {
                   onClick={() => handleDeleteAnnouncement(viewingAnnounce.id)}
                   className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
                 >
-                  Delete
+                  刪除
                 </button>
               )}
               <button onClick={() => setViewingAnnounce(null)} className="ml-auto px-8 py-3 bg-black text-white text-[10px] font-black tracking-widest uppercase">
-                Close
+                取消
               </button>
             </div>
           </div>
@@ -1232,14 +1240,14 @@ export const Dashboard: React.FC = () => {
           <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
-              <span className="text-xl font-black tracking-widest text-black">POST NEWS</span>
+              <span className="text-xl font-black tracking-widest text-black">發佈公告</span>
               <button onClick={() => setIsAnnounceCreateOpen(false)}>
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
 
             <form onSubmit={handleAddAnnouncement}>
-              <label className={STYLES.formLabel} htmlFor="ann-title">Title *</label>
+              <label className={STYLES.formLabel} htmlFor="ann-title">標題 *</label>
               <input
                 id="ann-title"
                 type="text"
@@ -1249,7 +1257,7 @@ export const Dashboard: React.FC = () => {
                 onChange={(event) => setNewAnnounce((prev) => ({ ...prev, title: event.target.value }))}
               />
 
-              <label className={STYLES.formLabel} htmlFor="ann-content">Content *</label>
+              <label className={STYLES.formLabel} htmlFor="ann-content">內容 *</label>
               <textarea
                 id="ann-content"
                 rows={5}
@@ -1268,12 +1276,12 @@ export const Dashboard: React.FC = () => {
                   onChange={(event) => setNewAnnounce((prev) => ({ ...prev, priority: event.target.checked }))}
                 />
                 <label htmlFor="ann-priority" className="cursor-pointer text-[10px] font-bold tracking-widest uppercase">
-                  Priority
+                  標記為置頂
                 </label>
               </div>
 
               <button type="submit" className={STYLES.submitBtn}>
-                <Send size={14} aria-hidden="true" /> PUBLISH
+                <Send size={14} aria-hidden="true" /> 發佈
               </button>
             </form>
           </div>
@@ -1285,7 +1293,7 @@ export const Dashboard: React.FC = () => {
           <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
-              <span className="text-xl font-black tracking-widest text-black">INVITE STUDENT</span>
+              <span className="text-xl font-black tracking-widest text-black">邀請學生</span>
               <button onClick={() => setIsInviteOpen(false)}>
                 <X size={20} aria-hidden="true" />
               </button>
@@ -1294,9 +1302,9 @@ export const Dashboard: React.FC = () => {
             <form onSubmit={handleInviteStudent}>
               {[
                 { id: 'inv-email', label: 'Email *', name: 'email', type: 'email', ph: 'student@example.com' },
-                { id: 'inv-name', label: 'Full Name', name: 'full_name', type: 'text', ph: 'Wang' },
-                { id: 'inv-class', label: 'Class', name: 'class_name', type: 'text', ph: 'Class A' },
-                { id: 'inv-no', label: 'Student No', name: 'student_no', type: 'text', ph: 'A1001' },
+                { id: 'inv-name', label: '學生姓名', name: 'full_name', type: 'text', ph: '王大明' },
+                { id: 'inv-class', label: '班級名稱', name: 'class_name', type: 'text', ph: '甲班' },
+                { id: 'inv-no', label: '學號', name: 'student_no', type: 'text', ph: 'A1001' },
               ].map((field) => (
                 <div key={field.id}>
                   <label className={STYLES.formLabel} htmlFor={field.id}>{field.label}</label>
@@ -1317,7 +1325,7 @@ export const Dashboard: React.FC = () => {
 
               <button type="submit" disabled={isInviting} className={`${STYLES.submitBtn} mt-6`}>
                 <Users size={14} aria-hidden="true" />
-                {isInviting ? 'SENDING...' : 'SEND INVITE EMAIL'}
+                {isInviting ? '發送中...' : '發送邀請信'}
               </button>
             </form>
           </div>
