@@ -23,15 +23,15 @@ const GSAP_SELECTORS = {
 // [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
   // Mobile First 預設 flex-col
-  wrapper:     'relative flex flex-col justify-center min-h-[80vh] w-full bg-[var(--ui-white)] overflow-hidden rounded-2xl border border-[var(--ui-border)] mb-16 theme-transition',
+  wrapper:     'relative flex flex-col justify-center min-h-[80vh] w-full mb-16 overflow-hidden bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl theme-transition',
   container:   `${LAYOUT.colCenterText} relative z-10 px-6`,
-  title:       'text-5xl font-bold text-[var(--brand-primary)] tracking-tighter md:text-7xl lg:text-8xl theme-transition',
+  title:       'text-5xl font-bold tracking-tighter text-[var(--brand-primary)] theme-transition md:text-7xl lg:text-8xl',
   brandBlue:   'text-[var(--hsinyu-blue)] theme-transition',
-  description: 'mt-8 text-base text-neutral-400 font-light tracking-[0.3em] md:text-lg lg:text-xl',
-  button:      'mt-12 px-10 py-4 bg-[var(--hsinyu-blue)] text-[var(--theme-white)] rounded-full theme-transition duration-300 hover:bg-[var(--brand-primary)] hover:shadow-2xl active:scale-95',
+  description: 'mt-8 text-base font-light tracking-[0.3em] text-neutral-400 md:text-lg lg:text-xl',
+  button:      'mt-12 px-10 py-4 bg-[var(--hsinyu-blue)] text-[var(--theme-white)] rounded-full transition-all duration-300 theme-transition hover:bg-[var(--brand-primary)] hover:shadow-2xl active:scale-95',
   
   // 抽象幾何葉片視覺樣式
-  leafUI:      'absolute opacity-10 pointer-events-none theme-transition'
+  leafUI:      'absolute top-1/4 right-[10%] w-32 h-32 border border-[var(--hsinyu-blue)] rounded-bl-[100px] rounded-tr-[100px] opacity-10 pointer-events-none theme-transition md:w-48 md:h-48 lg:w-64 lg:h-64'
 } as const;
 
 // [C] 元件主體
@@ -111,7 +111,7 @@ export const Hero: React.FC = () => {
       {/* 背景裝飾：極簡數位葉片 */}
       <div 
         ref={leafRef}
-        className={`${GSAP_SELECTORS.leaf} ${STYLES.leafUI} top-1/4 right-[10%] w-32 h-32 border md:w-48 md:h-48 lg:w-64 lg:h-64 border-[var(--hsinyu-blue)] rounded-bl-[100px] rounded-tr-[100px]`} 
+        className={`${GSAP_SELECTORS.leaf} ${STYLES.leafUI}`} 
         aria-hidden="true"
       />
 
@@ -124,15 +124,15 @@ export const Hero: React.FC = () => {
           在 AI 時代，給孩子最溫暖的成長導航
         </p>
 
-        <div className={GSAP_SELECTORS.action}>
-          <button 
-            className={STYLES.button} 
-            aria-label="探索完整全齡課程體系"
-            onClick={handleExplorePaths}
-          >
-            探索未來路徑
-          </button>
-        </div>
+	        <div className={GSAP_SELECTORS.action}>
+	          <button 
+	            className={STYLES.button} 
+	            aria-label="前往全齡課程體系頁面"
+	            onClick={handleExplorePaths}
+	          >
+	            探索未來路徑
+	          </button>
+	        </div>
       </div>
     </section>
   );

@@ -75,10 +75,10 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/check-in" element={<CheckIn />} />
         </Routes>
-        
-        {/* 頁腳區塊 */}
-        <Footer />
       </main>
+
+      {/* 頁腳區塊 */}
+      <Footer />
       
       <BackToTop />
     </div>

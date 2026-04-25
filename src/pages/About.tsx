@@ -121,9 +121,10 @@ export const AboutPage: React.FC = () => {
         <div className={STYLES.heroSubtitle}>Since 2016</div>
       </section>
 
-      {/* Timeline Section */}
-      <section className={STYLES.timelineSection}>
-        <div className={STYLES.timelineContainer}>
+	      {/* Timeline Section */}
+	      <section className={STYLES.timelineSection} aria-labelledby="timeline-title">
+	        <div className={STYLES.timelineContainer}>
+            <h2 id="timeline-title" className="sr-only">歷史沿革</h2>
           <div className={STYLES.spine} aria-hidden="true" />
           
           {HISTORY_DATA.map((item, idx) => {

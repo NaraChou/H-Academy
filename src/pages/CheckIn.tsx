@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { UserCheck, Delete, ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 /**

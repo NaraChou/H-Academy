@@ -144,21 +144,25 @@ export const EducationPage: React.FC = () => {
 
   return (
     <div className={STYLES.wrapper} ref={containerRef}>
+      <h1 className="sr-only">欣育全齡課程體系</h1>
       
       {/* Scroll Spy Dot Navigation */}
       <nav className={STYLES.pageNav} aria-label="全齡課程快捷導航">
-        {EDUCATION_STAGES.map((stage) => (
-          <div 
-            key={`dot-${stage.id}`} 
-            className={STYLES.dotWrap}
-            onClick={() => scrollToHash(stage.id)}
-            role="button"
-            tabIndex={0}
-          >
-            <span className={STYLES.dotLabel}>{stage.title}</span>
-            <span className={`${STYLES.dot} ${activeHash === stage.id ? STYLES.dotActive : ''}`} aria-hidden="true" />
-          </div>
-        ))}
+        <ul className="flex flex-col gap-6">
+          {EDUCATION_STAGES.map((stage) => (
+            <li key={`dot-${stage.id}`}>
+              <button 
+                className={STYLES.dotWrap}
+                onClick={() => scrollToHash(stage.id)}
+                aria-label={`跳轉至 ${stage.title}`}
+                aria-current={activeHash === stage.id ? 'location' : undefined}
+              >
+                <span className={STYLES.dotLabel}>{stage.title}</span>
+                <span className={`${STYLES.dot} ${activeHash === stage.id ? STYLES.dotActive : ''}`} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
       </nav>
 
       {/* Sections */}

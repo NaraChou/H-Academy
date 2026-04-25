@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Menu, X, Leaf, ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { Bell, Menu, X, Leaf, User, Settings, LogOut } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { NAV_ITEMS } from '../../data/appData';
 import { supabase } from '../../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+
+/**
+ * [A] 視覺資訊備註
+ * 導覽列 (Layer 04) - 樣式重構 v2.1
+ * 視覺語言：極簡高對比、1px Border、毛玻璃效果。
+ * 重構重點：Tailwind 排序重整、補齊 RWD 斷點、散落樣式抽離至 STYLES。
+ */
 
 interface Announcement {
   id: string;
@@ -14,53 +22,59 @@ interface Announcement {
   type?: string;
 }
 
+// [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
-  header: 'fixed top-0 z-[100] w-full transition-all duration-500 theme-transition flex items-center justify-between px-6 md:px-12',
-  glass:  'bg-[var(--ui-white)]/80 backdrop-blur-md border-b',
-  scrolled: 'py-3 shadow-sm border-[var(--ui-border)]',
-  default:  'py-6 border-transparent',
+  header: 'fixed top-0 z-[100] flex items-center justify-between w-full px-6 transition-all duration-500 theme-transition md:px-12',
+  glass: 'bg-[var(--ui-white)]/80 backdrop-blur-md border-b',
+  scrolled: 'py-3 border-[var(--ui-border)] shadow-sm',
+  default: 'py-6 border-transparent',
   
-  logo: 'flex items-center gap-2 text-xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition lg:text-2xl z-50',
+  logo: 'z-50 flex items-center gap-2 text-xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition lg:text-2xl',
   logoIcon: 'flex-shrink-0 text-[var(--brand-accent)] theme-transition',
+  logoText: 'hidden sm:inline tracking-[0.2em]',
   
-  rightSide: 'flex items-center justify-end flex-1 gap-6',
+  rightSide: 'flex flex-1 items-center justify-end gap-6',
 
-  nav: 'hidden lg:flex items-center justify-end gap-4 xl:gap-8 flex-1',
+  nav: 'hidden lg:flex flex-1 items-center justify-end gap-4 xl:gap-8',
   navItemWrap: 'relative group py-2',
-  navLink: 'relative text-sm font-medium tracking-widest text-[var(--text-main)] transition-colors theme-transition after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-px after:bg-[var(--hsinyu-blue)] after:transition-all after:duration-300 hover:after:w-full hover:text-[var(--hsinyu-blue)]',
+  navLink: 'relative text-sm font-medium tracking-widest text-[var(--text-main)] transition-colors theme-transition after:absolute after:bottom-0 after:left-1/2 after:h-px after:w-0 after:-translate-x-1/2 after:bg-[var(--hsinyu-blue)] after:transition-all after:duration-300 hover:text-[var(--hsinyu-blue)] hover:after:w-full',
   
-  dropdown: 'absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300',
-  dropdownContent: 'flex flex-col min-w-[160px] bg-[var(--ui-bg)]/90 backdrop-blur-md border border-[var(--ui-border)] p-2 shadow-xl theme-transition rounded-sm',
-  dropdownLink: 'block px-4 py-3 text-sm text-[var(--text-main)] hover:bg-[var(--ui-border)] hover:text-[var(--hsinyu-blue)] transition-colors theme-transition',
+  dropdown: 'invisible absolute top-full left-1/2 pt-4 opacity-0 -translate-x-1/2 transition-all duration-300 group-hover:visible group-hover:opacity-100',
+  dropdownContent: 'flex flex-col min-w-[160px] p-2 bg-[var(--ui-bg)]/90 backdrop-blur-md border border-[var(--ui-border)] rounded-sm shadow-xl theme-transition',
+  dropdownLink: 'block px-4 py-3 text-sm text-[var(--text-main)] transition-colors theme-transition hover:bg-[var(--ui-border)] hover:text-[var(--hsinyu-blue)]',
   
-  actions: 'flex items-center gap-4 z-50',
-  iconBtn: 'relative p-2 text-[var(--text-main)] hover:text-[var(--brand-primary)] transition-colors theme-transition pointer-events-auto',
-  badge: 'absolute top-1 right-2 w-2 h-2 rounded-full bg-[var(--brand-accent)] border border-[var(--ui-bg)] theme-transition',
+  actions: 'z-50 flex items-center gap-4',
+  iconBtn: 'relative p-2 text-[var(--text-main)] transition-colors theme-transition pointer-events-auto hover:text-[var(--brand-primary)]',
+  badge: 'absolute top-1 right-2 w-2 h-2 bg-[var(--brand-accent)] border border-[var(--ui-bg)] rounded-full theme-transition',
   
-  popover: 'absolute top-full right-0 pt-4 opacity-0 invisible transition-all duration-300 group-hover/bell:opacity-100 group-hover/bell:visible theme-transition rounded-sm pointer-events-auto z-[110]',
+  popover: 'invisible absolute top-full right-0 z-[110] pt-4 opacity-0 transition-all duration-300 theme-transition rounded-sm pointer-events-auto group-hover/bell:visible group-hover/bell:opacity-100',
   popoverContent: 'w-72 p-4 bg-[var(--ui-bg)] border border-[var(--ui-border)] shadow-xl text-sm text-[var(--text-sub)] theme-transition',
+  popoverTitle: 'mb-4 font-bold text-[var(--brand-primary)] theme-transition',
+  popoverScroll: 'flex flex-col gap-4 max-h-64 pr-2 overflow-y-auto',
+  notifItem: 'pb-2 border-b border-[var(--ui-border)] last:border-0',
+  notifTitle: 'mb-1 font-medium text-[var(--text-main)]',
+  notifDesc: 'mb-1 text-xs text-[var(--text-sub)]',
+  notifDate: 'text-xs text-neutral-400',
+  popoverFooter: 'flex items-center justify-end mt-4 pt-4 border-t border-[var(--ui-border)] text-xs font-bold tracking-wider text-[var(--hsinyu-blue)] transition-transform duration-300 hover:translate-x-1',
   
-  mobileNavOverlay: 'fixed inset-0 z-40 bg-[var(--ui-bg)]/95 backdrop-blur-lg flex flex-col justify-center items-center gap-8 transition-all duration-500 theme-transition',
-  mobileNavLink: 'text-2xl font-medium tracking-widest text-[var(--text-main)] hover:text-[var(--hsinyu-blue)] theme-transition',
+  mobileNavOverlay: 'fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 bg-[var(--ui-bg)]/95 backdrop-blur-lg transition-all duration-500 theme-transition',
+  mobileNavLink: 'text-2xl font-medium tracking-widest text-[var(--text-main)] transition-all theme-transition hover:text-[var(--hsinyu-blue)]',
   
-  // User Dropdown
-  userDropdown: 'absolute top-full right-0 pt-4 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all duration-300 theme-transition rounded-sm overflow-hidden z-[110]',
-  userDropdownContent: 'w-60 bg-[var(--ui-bg)] border border-[var(--ui-border)] shadow-xl overflow-hidden',
-  userHeader: 'px-4 py-3 border-b border-[var(--ui-border)] bg-[var(--ui-white)]/50',
+  userDropdown: 'invisible absolute top-full right-0 z-[110] pt-4 opacity-0 transition-all duration-300 theme-transition rounded-sm overflow-hidden group-hover/user:visible group-hover/user:opacity-100',
+  userDropdownContent: 'w-60 overflow-hidden bg-[var(--ui-bg)] border border-[var(--ui-border)] shadow-xl',
+  userHeader: 'px-4 py-3 bg-[var(--ui-white)]/50 border-b border-[var(--ui-border)]',
   userEmail: 'text-[10px] font-bold tracking-widest text-[var(--text-sub)] uppercase truncate',
-  userOption: 'flex items-center gap-3 px-4 py-3 text-xs font-bold tracking-widest text-[var(--text-main)] hover:bg-[var(--ui-border)] hover:text-[var(--hsinyu-blue)] transition-colors theme-transition',
-  logoutOption: 'flex items-center gap-3 px-4 py-3 text-xs font-bold tracking-widest text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors theme-transition w-full text-left',
+  userOption: 'flex items-center gap-3 px-4 py-3 text-xs font-bold tracking-widest text-[var(--text-main)] transition-colors theme-transition hover:bg-[var(--ui-border)] hover:text-[var(--hsinyu-blue)]',
+  logoutOption: 'flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-bold tracking-widest text-[#EF4444] transition-colors theme-transition hover:bg-[#EF4444]/10',
   
-  // Mobile Notification Overlay
-  mobileNotifOverlay: 'fixed inset-0 z-[200] bg-[var(--ui-bg)]/95 backdrop-blur-xl flex flex-col transition-transform duration-500 ease-in-out',
-  mobileMenuToggle: 'block lg:hidden p-2 text-[var(--text-main)] cursor-pointer z-50',
+  mobileNotifOverlay: 'fixed inset-0 z-[200] flex flex-col bg-[var(--ui-bg)]/95 backdrop-blur-xl transition-transform duration-500 ease-in-out',
+  mobileMenuToggle: 'z-50 block p-2 text-[var(--text-main)] cursor-pointer lg:hidden',
 } as const;
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileNotifOpen, setMobileNotifOpen] = useState(false);
-  const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const location = useLocation();
@@ -82,7 +96,6 @@ export const Navbar: React.FC = () => {
       }
     };
 
-    // Auth subscription
     const getAuthState = async () => {
       if (!supabase) return;
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -111,7 +124,6 @@ export const Navbar: React.FC = () => {
   };
 
   const handleNavClick = (href: string) => {
-    // If clicking the current path/hash, manually scroll since router doesn't trigger URL change
     const [path, hash] = href.split('#');
     if (location.pathname === path && location.hash.replace('#', '') === (hash || '')) {
       if (hash) {
@@ -125,7 +137,6 @@ export const Navbar: React.FC = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
-      // Different route or hash, let route transition happen but close mobile menus
        setMobileMenuOpen(false);
     }
   };
@@ -133,7 +144,6 @@ export const Navbar: React.FC = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
     setMobileNotifOpen(false);
-    setExpandedItem(null);
   }, [location.pathname, location.hash]);
 
   return (
@@ -141,30 +151,34 @@ export const Navbar: React.FC = () => {
       <header className={`${STYLES.header} ${STYLES.glass} ${isScrolled ? STYLES.scrolled : STYLES.default}`}>
         <Link to="/" className={STYLES.logo}>
           <Leaf className={STYLES.logoIcon} size={28} aria-hidden="true" />
-          <span className="hidden sm:inline tracking-[0.2em]">欣育</span>
+          <span className={STYLES.logoText}>欣育</span>
         </Link>
         
         <div className={STYLES.rightSide}>
           <nav className={STYLES.nav} aria-label="主要導覽列">
-            {NAV_ITEMS.map((item, idx) => (
-              <div key={idx} className={item.children ? STYLES.navItemWrap : ''}>
-                <Link to={item.href} className={STYLES.navLink} onClick={() => handleNavClick(item.href)}>
-                   {item.label}
-                </Link>
+            <ul className="flex items-center gap-4 xl:gap-8">
+              {NAV_ITEMS.map((item, idx) => (
+                <li key={idx} className={item.children ? STYLES.navItemWrap : ''}>
+                  <Link to={item.href} className={STYLES.navLink} onClick={() => handleNavClick(item.href)}>
+                     {item.label}
+                  </Link>
                 {item.children && (
                   <div className={STYLES.dropdown}>
-                    <div className={STYLES.dropdownContent}>
+                    <ul className={STYLES.dropdownContent}>
                       {item.children.map((child, cIdx) => (
-                        <Link key={cIdx} to={child.href} className={STYLES.dropdownLink} onClick={() => handleNavClick(child.href)}>
-                          {child.label}
-                        </Link>
+                        <li key={cIdx}>
+                          <Link to={child.href} className={STYLES.dropdownLink} onClick={() => handleNavClick(child.href)}>
+                            {child.label}
+                          </Link>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
                 )}
-              </div>
+              </li>
             ))}
-          </nav>
+          </ul>
+        </nav>
           
           <div className={STYLES.actions}>
              <div className="relative group/bell">
@@ -176,28 +190,27 @@ export const Navbar: React.FC = () => {
                  <Bell size={20} />
                  {announcements.length > 0 && <span className={STYLES.badge} aria-hidden="true" />}
                </button>
-               {/* Desktop Popover */}
                <div className={`${STYLES.popover} hidden sm:block`}>
                  <div className={STYLES.popoverContent}>
-                   <h4 className="font-bold text-[var(--brand-primary)] mb-4 theme-transition">最新公告</h4>
-                   <div className="flex flex-col gap-4 max-h-64 overflow-y-auto pr-2">
+                   <h2 className={STYLES.popoverTitle}>最新公告</h2>
+                   <div className={STYLES.popoverScroll}>
                      {announcements.length > 0 ? (
                        announcements.map((ann) => (
-                         <div key={ann.id} className="border-b last:border-0 border-[var(--ui-border)] pb-2">
-                           <h5 className="text-[var(--text-main)] font-medium mb-1">{ann.title}</h5>
-                           <p className="text-[var(--text-sub)] text-xs mb-1">{ann.content}</p>
-                           <p className="text-xs text-neutral-400">
+                         <div key={ann.id} className={STYLES.notifItem}>
+                           <h3 className={STYLES.notifTitle}>{ann.title}</h3>
+                           <p className={STYLES.notifDesc}>{ann.content}</p>
+                           <p className={STYLES.notifDate}>
                              {new Date(ann.created_at).toLocaleDateString('zh-TW')}
                            </p>
                          </div>
                        ))
                      ) : (
-                       <p className="text-center py-2 text-neutral-500">目前尚無新公告</p>
+                       <p className="py-2 text-center text-neutral-500">目前尚無新公告</p>
                      )}
                    </div>
                    <Link 
                      to="/news" 
-                     className="flex items-center justify-end mt-4 pt-4 border-t border-[var(--ui-border)] text-xs font-bold tracking-wider text-[var(--hsinyu-blue)] hover:translate-x-1 transition-transform duration-300"
+                     className={STYLES.popoverFooter}
                    >
                      查看全部公告 →
                    </Link>
@@ -211,9 +224,8 @@ export const Navbar: React.FC = () => {
               {user ? (
                 <>
                   <button className={STYLES.iconBtn} aria-label="會員選單">
-                    <User size={20} className="text-[var(--hsinyu-blue)]" />
+                    <User size={20} className="text-[var(--hsinyu-blue)]" aria-hidden="true" />
                   </button>
-                  {/* User Dropdown */}
                   <div className={STYLES.userDropdown}>
                     <div className={STYLES.userDropdownContent}>
                       <div className={STYLES.userHeader}>
@@ -223,8 +235,8 @@ export const Navbar: React.FC = () => {
                         <Settings size={14} />
                         個人設定
                       </Link>
-                      <button onClick={handleLogout} className={STYLES.logoutOption}>
-                        <LogOut size={14} />
+                      <button onClick={handleLogout} className={STYLES.logoutOption} aria-label="登出系統">
+                        <LogOut size={14} aria-hidden="true" />
                         安全登出
                       </button>
                     </div>
@@ -243,83 +255,59 @@ export const Navbar: React.FC = () => {
               aria-label={mobileMenuOpen ? "關閉選單" : "開啟選單"}
               aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button
-            >
+              {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
+            </button>
           </div>
         </div>
       </header>
       
-      {/* Mobile Notification Overlay */}
-      <div 
-        className={`${STYLES.mobileNotifOverlay} ${mobileNotifOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        aria-hidden={!mobileNotifOpen}
-      >
-        <div className="flex justify-between items-center p-6 border-b border-[var(--ui-border)]">
-          <h4 className="font-bold text-[var(--brand-primary)] text-xl">最新公告</h4>
-          <button onClick={() => setMobileNotifOpen(false)} className="p-4" aria-label="關閉公告">
-            <X size={28} />
-          </button>
-        </div>
-        <div className="flex flex-col p-6 gap-6 overflow-y-auto flex-1">
-          {announcements.length > 0 ? (
-            announcements.map((ann) => (
-              <div key={ann.id} className="border-b border-[var(--ui-border)] pb-4">
-                <span className="inline-block px-2 py-0.5 mb-2 text-[10px] font-bold tracking-wider text-white bg-[var(--hsinyu-blue)] uppercase">
-                  {ann.type || '公告'}
-                </span>
-                <h5 className="text-lg text-[var(--text-main)] font-medium mb-1">{ann.title}</h5>
-                <p className="text-sm text-[var(--text-sub)] mb-2">{ann.content}</p>
-                <p className="text-xs text-neutral-400">
-                  {new Date(ann.created_at).toLocaleDateString('zh-TW')}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p className="text-center py-8 text-neutral-500">目前尚無新公告</p>
-          )}
-          <Link 
-            to="/news" 
-            className="mt-8 flex items-center justify-center p-4 border border-[var(--ui-border)] text-sm font-bold tracking-wider text-[var(--hsinyu-blue)] hover:bg-[var(--hsinyu-blue)] hover:text-white transition-colors"
-            onClick={() => setMobileNotifOpen(false)}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            className={STYLES.mobileNavOverlay}
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
           >
-            前往訊息中心 →
-          </Link>
-        </div>
-      </div>
+            {NAV_ITEMS.map((item, idx) => (
+              <Link key={idx} to={item.href} className={STYLES.mobileNavLink} onClick={() => handleNavClick(item.href)}>
+                {item.label}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div 
-        className={`${STYLES.mobileNavOverlay} ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        aria-hidden={!mobileMenuOpen}
-      >
-        <Link to="/" className={STYLES.mobileNavLink}>回首頁</Link>
-        {NAV_ITEMS.map((item, idx) => {
-          const hasChildren = item.children && item.children.length > 0;
-          const isExpanded = expandedItem === idx;
-          return (
-            <div key={idx} className="flex flex-col items-center w-full">
-              <button 
-                onClick={() => hasChildren ? setExpandedItem(isExpanded ? null : idx) : null}
-                className={`${STYLES.mobileNavLink} flex items-center gap-2`}
-              >
-                {hasChildren ? item.label : <Link to={item.href} onClick={() => handleNavClick(item.href)}>{item.label}</Link>}
-                {hasChildren && <ChevronDown size={20} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />}
+      <AnimatePresence>
+        {mobileNotifOpen && (
+          <motion.div 
+            className={STYLES.mobileNotifOverlay}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+          >
+            <div className="flex items-center justify-between p-6 border-b border-[var(--ui-border)]">
+              <h3 className="text-xl font-black uppercase tracking-tighter">最新公告</h3>
+              <button onClick={() => setMobileNotifOpen(false)} className="p-2">
+                <X size={24} />
               </button>
-              
-              {hasChildren && isExpanded && (
-                <div className="flex flex-col items-center gap-2 mt-2 border-t border-[var(--ui-border)] pt-2 w-full">
-                  {item.children!.map((child, cIdx) => (
-                    <Link key={`child-${cIdx}`} to={child.href} className="text-lg text-[var(--text-sub)] hover:text-[var(--hsinyu-blue)] transition-colors theme-transition py-1" onClick={() => handleNavClick(child.href)}>
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
+            </div>
+            <div className="flex-1 p-6 overflow-y-auto">
+              {announcements.length > 0 ? (
+                announcements.map((ann) => (
+                  <div key={ann.id} className="mb-8 pb-4 border-b border-[var(--ui-border)] last:border-0">
+                    <h4 className="text-lg font-bold mb-2">{ann.title}</h4>
+                    <p className="text-[var(--text-sub)] text-sm mb-2 leading-relaxed">{ann.content}</p>
+                    <span className="text-xs text-neutral-400">{new Date(ann.created_at).toLocaleDateString('zh-TW')}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-20 text-neutral-500 italic">目前尚無新公告</p>
               )}
             </div>
-          );
-        })}
-        <Link to="/login" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>會員登入</Link>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

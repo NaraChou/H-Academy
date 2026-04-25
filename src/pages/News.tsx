@@ -86,14 +86,14 @@ export const News: React.FC = () => {
   }, [announcements]);
 
   return (
-    <main className={STYLES.section}>
+    <div className={STYLES.section}>
       <header className="mb-16 border-b border-black/5 pb-10">
         <div className="flex items-center gap-3 text-[10px] font-black tracking-[0.3em] text-neutral-400 uppercase mb-4">
           <Clock size={12} /> Academic Portal
         </div>
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-[0.9]">
-          公告中心<br/>
-          <span className="text-stroke text-transparent">Announcements</span>
+          公告中心<br/><br/>
+          <span className="text-stroke text-block">Announcements</span>
         </h1>
       </header>
 
@@ -108,11 +108,15 @@ export const News: React.FC = () => {
             className={STYLES.grid}
           >
             {announcements.map((ann, idx) => (
-              <article 
-                key={ann.id} 
-                className={`${STYLES.card} ${idx === 0 && page === 0 ? STYLES.latestCard : ''}`}
-                onClick={() => setViewingDetail(ann)}
-              >
+	                <article 
+	                key={ann.id} 
+	                className={`${STYLES.card} ${idx === 0 && page === 0 ? STYLES.latestCard : ''}`}
+	              >
+                  <button 
+                    className="absolute inset-0 w-full h-full z-10 opacity-0 cursor-pointer"
+                    onClick={() => setViewingDetail(ann)}
+                    aria-label={`查看公告詳情：${ann.title}`}
+                  />
                 <div className="flex flex-col h-full">
                   <header>
                     <span className={STYLES.tag}>
@@ -146,13 +150,14 @@ export const News: React.FC = () => {
 
         {/* Pagination */}
         <div className={STYLES.pagination}>
-          <button 
-            disabled={page === 0}
-            onClick={() => setPage(p => p - 1)}
-            className={STYLES.pageBtn}
-          >
-            <ChevronLeft size={16} /> PREV
-          </button>
+	          <button 
+	            disabled={page === 0}
+	            onClick={() => setPage(p => p - 1)}
+	            className={STYLES.pageBtn}
+              aria-label="上一頁"
+	          >
+	            <ChevronLeft size={16} /> PREV
+	          </button>
           
           <div className="flex flex-col items-center">
             <span className="text-[10px] font-black tracking-widest text-black/20 mb-1">PAGE</span>
@@ -161,13 +166,14 @@ export const News: React.FC = () => {
             </span>
           </div>
 
-          <button 
-            disabled={(page + 1) * itemsPerPage >= total}
-            onClick={() => setPage(p => p + 1)}
-            className={STYLES.pageBtn}
-          >
-            NEXT <ChevronRight size={16} />
-          </button>
+	          <button 
+	            disabled={(page + 1) * itemsPerPage >= total}
+	            onClick={() => setPage(p => p + 1)}
+	            className={STYLES.pageBtn}
+              aria-label="下一頁"
+	          >
+	            NEXT <ChevronRight size={16} />
+	          </button>
         </div>
       </div>
 
@@ -184,12 +190,13 @@ export const News: React.FC = () => {
             >
               <div className={STYLES.modalLine} />
               
-              <button 
-                onClick={() => setViewingDetail(null)}
-                className="absolute top-8 right-8 p-2 hover:rotate-90 transition-transform duration-500 z-10"
-              >
-                <X size={24} />
-              </button>
+	              <button 
+	                onClick={() => setViewingDetail(null)}
+	                className="absolute top-8 right-8 p-2 hover:rotate-90 transition-transform duration-500 z-10"
+                  aria-label="關閉公告詳情"
+	              >
+	                <X size={24} />
+	              </button>
 
               <div className="mb-6">
                 <span className={STYLES.tag}>
@@ -223,6 +230,6 @@ export const News: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-    </main>
+    </div>
   );
 };

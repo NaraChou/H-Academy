@@ -10,6 +10,13 @@ import {
 import { motion } from 'motion/react';
 import { supabase } from '../../lib/supabase';
 
+/**
+ * [A] 視覺資訊備註
+ * 元件角色：教職員打卡區塊
+ * 視覺語言：高對比、圓角、精確資訊展示。
+ * 重構重點：Tailwind 排序重整、樣式抽離至 STYLES。
+ */
+
 type ToastType = 'success' | 'error';
 
 interface StaffCheckInProps {
@@ -18,7 +25,6 @@ interface StaffCheckInProps {
 
 // 地點修改：北屯區水湳里018鄰中清東一街３１之４號
 // 經緯度參考：24.1751304214824, 120.67276787047567
-// 校區範圍可依需求調整（100 公尺）
 const SCHOOL_LOCATION = {
   lat: 24.1751304214824,
   lng: 120.67276787047567,
@@ -26,11 +32,17 @@ const SCHOOL_LOCATION = {
 };
 
 const STYLES = {
-  root: 'h-full w-full bg-transparent flex flex-col',
-  statusBadge:
-    'px-2 py-1 rounded-full text-[8px] md:text-[7px] font-black tracking-[0.16em] uppercase border',
-  actionBtn:
-    'h-14 md:h-11 rounded-xl flex flex-col items-center justify-center gap-1 text-[8px] md:text-[7px] font-black tracking-[0.2em] uppercase transition-all duration-300 border',
+  root: 'flex flex-col w-full h-full bg-transparent',
+  header: 'flex items-center justify-between mb-3 md:mb-2',
+  headerLabel: 'text-[10px] font-black tracking-[0.2em] text-black/40 uppercase',
+  statusBadge: 'px-2 py-1 border rounded-full text-[8px] font-black tracking-[0.16em] uppercase md:text-[7px]',
+  locationInfo: 'flex items-center gap-2 mb-3 text-[11px] font-medium text-[var(--text-sub)] md:mb-2 md:text-[10px]',
+  grid: 'grid grid-cols-2 gap-2',
+  actionBtn: 'flex flex-col items-center justify-center gap-1 h-14 border rounded-xl text-[8px] font-black tracking-[0.2em] uppercase transition-all duration-300 md:h-11 md:text-[7px]',
+  footer: 'mt-2 min-h-[18px] text-[10px]',
+  errorMsg: 'flex items-center gap-1 text-red-500',
+  successMsg: 'block text-emerald-600',
+  refreshBtn: 'inline-flex items-center gap-1 mt-2 text-[8px] font-black tracking-[0.16em] text-black/30 uppercase transition-colors hover:text-black',
 } as const;
 
 const toRadians = (value: number) => (value * Math.PI) / 180;
@@ -154,10 +166,8 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
 
   return (
     <div className={STYLES.root}>
-      <div className="mb-3 md:mb-2 flex items-center justify-between">
-        <span className="text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">
-          員工打卡
-        </span>
+      <div className={STYLES.header}>
+        <span className={STYLES.headerLabel}>員工打卡</span>
         <span
           className={`${STYLES.statusBadge} ${
             isLocating
@@ -171,7 +181,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
         </span>
       </div>
 
-      <div className="mb-3 md:mb-2 flex items-center gap-2 text-[11px] md:text-[10px] font-medium text-[var(--text-sub)]">
+      <div className={STYLES.locationInfo}>
         <MapPin size={14} />
         {distanceMeters !== null ? (
           <span>
@@ -182,7 +192,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className={STYLES.grid}>
         <button
           onClick={() => handleCheckAction('in')}
           disabled={!isInRange || isLocating || isSubmitting}
@@ -214,9 +224,9 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
         </button>
       </div>
 
-      <div className="mt-2 min-h-[18px] text-[10px]">
+      <div className={STYLES.footer}>
         {error ? (
-          <div className="flex items-center gap-1 text-red-500">
+          <div className={STYLES.errorMsg}>
             <AlertCircle size={12} />
             <span>{error}</span>
           </div>
@@ -225,7 +235,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
             key={lastActionText || 'idle'}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="block text-emerald-600"
+            className={STYLES.successMsg}
           >
             {lastActionText || (isLocating ? '定位中...' : '請完成上下班打卡')}
           </motion.span>
@@ -234,7 +244,7 @@ export const StaffCheckIn: React.FC<StaffCheckInProps> = ({ onToast }) => {
 
       <button
         onClick={locate}
-        className="mt-2 inline-flex items-center gap-1 text-[8px] font-black tracking-[0.16em] uppercase text-black/30 hover:text-black transition-colors"
+        className={STYLES.refreshBtn}
       >
         <RefreshCcw size={11} />
         重新取得定位

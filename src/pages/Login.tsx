@@ -9,26 +9,24 @@ import { supabase } from '../lib/supabase';
  * 結構：垂直置中表單，帶有纖細邊框與微柔和陰影。
  */
 
-// 無 GSAP 複雜動畫掛載
-// const GSAP_SELECTORS = {}
-
+// [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
   wrapper: 'flex flex-col items-center justify-center min-h-[70vh] w-full px-6 py-20 theme-transition',
-  card: 'w-full max-w-md p-8 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm md:p-12 theme-transition hover:shadow-md duration-500',
-  title: 'text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] text-center mb-2 theme-transition',
-  subtitle: 'text-sm text-[var(--text-sub)] text-center mb-8 font-light tracking-widest',
+  card: 'w-full max-w-md p-8 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm transition-all duration-500 theme-transition hover:shadow-md md:p-12',
+  title: 'mb-2 text-center text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition',
+  subtitle: 'mb-8 text-center text-sm font-light tracking-widest text-[var(--text-sub)]',
   form: 'flex flex-col gap-6 w-full',
   
   // Input group
   inputGroup: 'flex flex-col gap-2',
   label: 'text-xs font-bold tracking-widest text-[var(--text-main)] uppercase theme-transition',
-  input: 'w-full px-4 py-3 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-xl text-sm text-[var(--text-main)] transition-colors duration-300 focus:outline-none focus:border-[var(--hsinyu-blue)] focus:ring-1 focus:ring-[var(--hsinyu-blue)]',
+  input: 'w-full px-4 py-3 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-xl text-sm text-[var(--text-main)] transition-colors duration-300 focus:border-[var(--hsinyu-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--hsinyu-blue)]',
   
   // Button
-  button: 'w-full flex justify-center items-center py-4 mt-2 bg-[var(--brand-primary)] text-[var(--ui-white)] text-sm font-bold tracking-widest rounded-xl transition-all duration-300 hover:bg-[var(--hsinyu-blue)] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]',
+  button: 'flex w-full items-center justify-center py-4 mt-2 bg-[var(--brand-primary)] text-[var(--ui-white)] text-sm font-bold tracking-widest rounded-xl transition-all duration-300 hover:bg-[var(--hsinyu-blue)] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
   
   // Error message
-  errorWrap: 'mb-6 text-sm text-[#EF4444] font-medium text-center bg-[#EF4444]/10 py-3 rounded-lg border border-[#EF4444]/20 px-4',
+  errorWrap: 'mb-6 px-4 py-3 text-center text-sm font-medium text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg',
 } as const;
 
 export const Login: React.FC = () => {
@@ -60,7 +58,6 @@ export const Login: React.FC = () => {
       });
 
       if (error) {
-        // Detailed error check for unconfirmed email
         if (error.message.includes('信箱未驗證')) {
           setErrorMsg('您的信箱尚未驗證。請檢查您的收件夾並點擊驗證連結。');
           setIsLoading(false);
@@ -70,7 +67,6 @@ export const Login: React.FC = () => {
       }
 
       if (data.user) {
-        // 登入成功，導向 dashboard
         navigate('/dashboard');
       }
     } catch (err: any) {
