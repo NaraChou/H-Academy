@@ -342,14 +342,32 @@ export const Dashboard: React.FC = () => {
     e.preventDefault(); if (!supabase || !user || !canManageGrades) return;
     const sid = newGrade.target_student_id.trim(); const subject = newGrade.subject.trim();
     const term = newGrade.term.trim() || '113-2'; const score = Number(newGrade.score);
-    if (!sid || !subject || isNaN(score)) { showToast('請完整輸入成績資料。', 'error'); return; }
+    if (!sid || !subject || isNaN(score)) { showToast('請填寫正確且完整的資料。', 'error'); return; }
     setIsGradeSubmitting(true);
     const { data, error } = await supabase.from('grade_records')
       .insert([{ student_id: sid, subject, term, score, exam_date: newGrade.exam_date || null, created_by: user.id }])
       .select('id').single();
+    
+    if (error) {
+      if (isMountedRef.current) {
+        setIsGradeSubmitting(false);
+        showToast(`新增成績失敗：${error.message}`, 'error');
+      }
+      return;
+    }
+
+    // [Audit Log] Record creation
+    await supabase.from('audit_logs').insert([{
+      operator_id: user.id,
+      action_type: 'CREATE',
+      target_table: 'grade_records',
+      target_id: String((data as any)?.id),
+      new_data: { student_id: sid, subject, term, score, exam_date: newGrade.exam_date || null },
+      description: `新增成績: ${subject} (${score})`
+    }]);
+
     if (!isMountedRef.current) return;
     setIsGradeSubmitting(false);
-    if (error) { showToast(`新增成績失敗：${error.message}`, 'error'); return; }
     setIsGradeCreateOpen(false); setNewGrade(EMPTY_GRADE);
     setLastUpdatedGradeId((data as any)?.id ?? null); showToast('成績新增成功！');
     window.setTimeout(() => { if (isMountedRef.current) setLastUpdatedGradeId(null); }, 3000);
@@ -357,25 +375,69 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleUpdateGrade = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!supabase || !editingGrade || !canManageGrades) return;
+    e.preventDefault(); if (!supabase || !editingGrade || !canManageGrades || !user) return;
     const { subject, term, score, exam_date, id } = editingGrade;
-    if (!subject.trim() || !term.trim() || isNaN(Number(score))) { showToast('請完整輸入成績資料。', 'error'); return; }
+    if (!subject.trim() || !term.trim() || isNaN(Number(score))) { showToast('請填寫正確且完整的資料。', 'error'); return; }
+    
+    // Fetch old data for audit log
+    const { data: oldRecord } = await supabase.from('grade_records').select('*').eq('id', id).single();
+
     setIsGradeSubmitting(true);
     const { error } = await supabase.from('grade_records')
       .update({ subject: subject.trim(), term: term.trim(), score: Number(score), exam_date: exam_date || null }).eq('id', id);
+    
+    if (error) {
+      if (isMountedRef.current) {
+        setIsGradeSubmitting(false);
+        showToast(`更新成績失敗：${error.message}`, 'error');
+      }
+      return;
+    }
+
+    // [Audit Log] Record update
+    await supabase.from('audit_logs').insert([{
+      operator_id: user.id,
+      action_type: 'UPDATE',
+      target_table: 'grade_records',
+      target_id: String(id),
+      old_data: oldRecord,
+      new_data: { subject: subject.trim(), term: term.trim(), score: Number(score), exam_date: exam_date || null },
+      description: `更新成績: ${subject} (${score})`
+    }]);
+
     if (!isMountedRef.current) return;
     setIsGradeSubmitting(false);
-    if (error) { showToast(`更新成績失敗：${error.message}`, 'error'); return; }
     setLastUpdatedGradeId(id); setEditingGrade(null); showToast('成績已更新！');
     window.setTimeout(() => { if (isMountedRef.current) setLastUpdatedGradeId(null); }, 3000);
     fetchGrades();
   };
 
   const handleDeleteGrade = async (gid: number | string) => {
-    if (!supabase || !canManageGrades || !window.confirm('確定要刪除此成績嗎？')) return;
+    if (!supabase || !canManageGrades || !user || !window.confirm('確定要刪除此成績嗎？')) return;
+    
+    // Fetch old data for audit log
+    const { data: oldRecord } = await supabase.from('grade_records').select('*').eq('id', gid).single();
+
     const { error } = await supabase.from('grade_records').delete().eq('id', gid);
+    
+    if (error) {
+      if (isMountedRef.current) {
+        showToast(`刪除成績失敗：${error.message}`, 'error');
+      }
+      return;
+    }
+
+    // [Audit Log] Record deletion
+    await supabase.from('audit_logs').insert([{
+      operator_id: user.id,
+      action_type: 'DELETE',
+      target_table: 'grade_records',
+      target_id: String(gid),
+      old_data: oldRecord,
+      description: `刪除成績: ${oldRecord?.subject || gid}`
+    }]);
+
     if (!isMountedRef.current) return;
-    if (error) { showToast(`刪除成績失敗：${error.message}`, 'error'); return; }
     showToast('成績已刪除。');
     if (grades.length === 1 && gradePage > 0) setGradePage((p) => p - 1); else fetchGrades();
   };
