@@ -13,6 +13,9 @@ export const NAV_ITEMS = [
     label: '分校榮譽',
     href: '/campus',
     children: [
+      { label: '分校位置', href: '/campus#locations' },
+      { label: '榮譽榜', href: '/campus#honors' },
+      { label: '環境藝廊', href: '/campus#gallery' }
     ]
   },
   { label: '數位諮詢', href: '/#contact' },
@@ -41,36 +44,23 @@ export const COURSES_DATA = [
     desc: '針對初學者設計的閱讀引導，透過故事與會話，建立孩子自信的語言能力。',
     features: ['互動式教學', '情境式閱讀', '口說應用'],
     colorToken: 'bg-amber-50 text-amber-700 border-amber-200',
+    teachers: ['外籍教師', '留美語文專家'],
+    price: 'NT$ 5,200 / 10堂',
+    syllabus: ['第一週：基礎發音與單字', '第二週：簡單句型架構', '第三週：繪本故事導讀', '第四週：期末成果發表']
   },
   {
-    id: 'course-02',
-    title: '進階理化',
-    category: '自然',
-    level: '國中',
-    desc: '結合數位模擬解析物理化學現象，建構清晰的立體科學知識網。',
-    features: ['數位實驗', '觀念統整', '素養考題'],
+    id: 'junior-01',
+    title: '國中全科卓越班',
+    category: '全科輔導',
+    level: '國中部',
+    desc: '針對國中課程進行全方位的重點整理與複習，幫助學生穩紮穩打，應對各項考試。',
+    features: ['全科涵蓋', '重點筆記', '考前衝刺'],
     colorToken: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    teachers: ['陳博士 理化名師'],
-    price: 'NT$ 6,000 / 10堂',
-    syllabus: [
-      '第一週：力學基礎與牛頓定律',
-      '第二週：電學現象與應用',
-      '第三週：化學反應與計量',
-      '第四週：模擬段考解析'
-    ]
+    teachers: ['欣育名師團隊'],
+    price: 'NT$ 12,000 / 學期',
+    syllabus: ['國文：古文精析', '數學：代數與幾何', '英文：文法與閱讀', '理化：實驗與觀念']
   },
   {
-    id: 'course-04',
-    title: '國中英文專攻',
-    category: '英文',
-    level: '國中',
-    desc: '會考全方位解析，將文法觀念化繁為簡，結合深度閱讀測驗訓練。',
-    features: ['會考解析', '單字字根', '閱讀素養'],
-    colorToken: 'bg-rose-50 text-rose-700 border-rose-200',
-    teachers: ['張名師 英文總召'],
-    price: 'NT$ 5,800 / 10堂',
-    syllabus: [
-      '第一週：核心文法總複習',
     id: 'junior-02',
     title: '國中理化專修班',
     category: '科學類',
