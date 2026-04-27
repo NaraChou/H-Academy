@@ -3,213 +3,139 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LAYOUT } from '../styles/layout';
 import {
-  AlertCircle,
-  Award,
-  Bell,
-  BookOpen,
-  CheckCircle2,
-  Clock,
-  Edit3,
-  Key,
-  Loader2,
-  Monitor,
-  Plus,
-  Send,
-  Star,
-  Trash2,
-  Trophy,
-  UserPlus,
-  X,
+  AlertCircle, Award, Bell, BookOpen, CheckCircle2, Clock,
+  Edit3, Key, Loader2, Monitor, Plus, Send, Star, Trash2,
+  Trophy, UserPlus, X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { StaffCheckIn } from '../components/sections/StaffCheckIn';
 
 /**
  * [A] 視覺資訊備註
- * 儀表板 (Layer 05) - 樣式重構 v2.1
+ * 儀表板 (Layer 05) - P1 重構 v2.2
  * 視覺語言：圓角設計、高對比、1px Border。
- * 重構重點：Tailwind 排序重整、補齊 RWD 斷點、散落樣式抽離至 STYLES。
+ *
+ * P0 (2026-04-25)：isMountedRef 防護 async setState
+ * P1 (2026-04-25)：
+ * - renderScore 硬編碼色值 #D4AF37/#E11D48 → var(--score-gold)/var(--score-fail)
+ * - errorBox 硬編碼 #EF4444 系列 → var(--color-danger-*)
+ * - 通知紅點 #E11D48 → var(--color-badge)
+ * - Trash 按鈕邊框/字色 → var(--score-fail)
+ * - Toast error bg → var(--score-fail)
+ * - STYLES 全面重排：Layout → Visual → State → Responsive
  */
 
 type UserRole = 'admin' | 'teacher' | 'staff' | 'student';
 type ToastType = 'success' | 'error';
 
 interface Profile {
-  id: string;
-  email: string;
-  role: UserRole;
+  id: string; email: string; role: UserRole;
   status: 'invited' | 'active' | 'suspended' | 'archived';
-  student_no: string | null;
-  full_name: string | null;
-  class_name: string | null;
+  student_no: string | null; full_name: string | null; class_name: string | null;
 }
-
-interface GradeProfile {
-  full_name: string | null;
-  student_no: string | null;
-  class_name: string | null;
-}
-
+interface GradeProfile { full_name: string | null; student_no: string | null; class_name: string | null; }
 interface GradeRecord {
-  id: number | string;
-  student_id: string;
-  subject: string;
-  term: string;
-  score: number;
-  exam_date: string | null;
-  graded_at: string;
-  created_by: string;
+  id: number | string; student_id: string; subject: string; term: string;
+  score: number; exam_date: string | null; graded_at: string; created_by: string;
   profile?: GradeProfile;
 }
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  priority: boolean;
-  created_at: string;
-}
-
-interface GradeFormState {
-  target_student_id: string;
-  subject: string;
-  term: string;
-  score: string;
-  exam_date: string;
-}
-
-interface ToastState {
-  message: string;
-  type: ToastType;
-}
+interface Announcement { id: string; title: string; content: string; priority: boolean; created_at: string; }
+interface GradeFormState { target_student_id: string; subject: string; term: string; score: string; exam_date: string; }
+interface ToastState { message: string; type: ToastType; }
 
 // [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
-  ...LAYOUT,
-  wrapper:
-    'flex flex-col w-full px-1 py-10 bg-[var(--ui-bg)] theme-transition md:px-6 md:pt-12 md:pb-8',
-  container: LAYOUT.container,
-  header:
-    'flex justify-between items-end mb-8 border-b border-[var(--ui-border)] pb-6 theme-transition md:mb-12',
-  headerLeft: 'flex items-center gap-4',
-  headerIcon: 'p-3 bg-black text-white rounded-2xl shadow-lg',
-  headerRight: 'flex items-center gap-6',
-  title:
-    'text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition md:text-4xl',
-  subtitle: 'mt-2 text-sm font-light text-[var(--text-sub)] md:text-lg',
-  logoutBtn:
-    'px-4 py-2 bg-[var(--ui-border)] text-[var(--text-main)] text-[10px] font-bold tracking-widest rounded-lg transition-all duration-300 hover:bg-[var(--brand-primary)] hover:text-white md:px-6 md:py-2',
-  modeBtn:
-    'hidden md:flex items-center gap-2 px-4 py-2 border border-black text-[10px] font-black tracking-widest uppercase hover:bg-black hover:text-white transition-all',
-  
-  bentoContainer:
-    'grid grid-cols-1 gap-4 auto-rows-auto md:grid-cols-3 md:gap-6 md:auto-rows-[200px]',
-  bentoItem:
-    'flex flex-col justify-between min-h-[160px] p-6 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm overflow-hidden theme-transition hover:shadow-lg duration-500 md:min-h-0 md:p-8',
-  bentoLarge: 'md:col-span-2 md:row-span-2 h-full',
-  bentoHeader: 'flex justify-between items-start mb-6 w-full',
-  bentoScrollArea: 'flex-1 overflow-y-auto pr-2',
+  wrapper:      'flex flex-col w-full px-1 py-10 bg-[var(--ui-bg)] theme-transition md:px-6 md:pt-12 md:pb-8',
+  container:    LAYOUT.container,
 
-  itemHeader: 'flex items-center gap-3 mb-4',
-  iconBox: 'p-2 rounded-lg bg-[var(--ui-border)] text-[var(--brand-primary)]',
-  cardLabel:
-    'text-[10px] font-bold tracking-widest text-[var(--text-sub)] uppercase',
+  header:       'flex justify-between items-end mb-8 border-b border-[var(--ui-border)] pb-6 theme-transition md:mb-12',
+  headerLeft:   'flex items-center gap-4',
+  headerIcon:   'p-3 bg-black text-white rounded-2xl shadow-lg',
+  headerRight:  'flex items-center gap-6',
+  title:        'text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition md:text-4xl',
+  subtitle:     'mt-2 text-sm font-light text-[var(--text-sub)] md:text-lg',
+  // [P1 FIX] transition- 統一歸入 State 區；Responsive 置尾
+  logoutBtn:    'px-4 py-2 bg-[var(--ui-border)] rounded-lg text-[var(--text-main)] text-[10px] font-bold tracking-widest transition-all duration-300 hover:bg-[var(--brand-primary)] hover:text-white md:px-6',
+  modeBtn:      'hidden items-center gap-2 px-4 py-2 border border-black text-[10px] font-black tracking-widest uppercase transition-all hover:bg-black hover:text-white md:flex',
 
-  gradeRow:
-    'grid items-center px-4 py-5 border-b border-[var(--ui-border)] last:border-0 hover:bg-[var(--ui-bg)]/50 transition-colors gap-y-3 md:gap-y-0',
+  // [P1 FIX] overflow-hidden 移至 Layout 區首；hover:/duration- 歸入 State 區
+  bentoContainer: 'grid grid-cols-1 gap-4 auto-rows-auto md:grid-cols-3 md:gap-6 md:auto-rows-[200px]',
+  bentoItem:    'flex flex-col justify-between overflow-hidden min-h-[160px] p-6 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm theme-transition duration-500 hover:shadow-lg md:min-h-0 md:p-8',
+  bentoLarge:   'md:col-span-2 md:row-span-2 h-full',
+  bentoHeader:  'flex justify-between items-start mb-6 w-full',
+  bentoScroll:  'flex-1 overflow-y-auto pr-2',
+
+  itemHeader:   'flex items-center gap-3 mb-4',
+  iconBox:      'p-2 rounded-lg bg-[var(--ui-border)] text-[var(--brand-primary)]',
+  cardLabel:    'text-[10px] font-bold tracking-widest text-[var(--text-sub)] uppercase',
+
+  // [P1 FIX] transition- 歸入 State 區
+  gradeRow:     'grid items-center px-4 py-5 border-b border-[var(--ui-border)] last:border-0 gap-y-3 transition-colors hover:bg-[var(--ui-bg)]/50 md:gap-y-0',
   gradeSubject: 'font-bold text-[var(--text-main)]',
-  gradeMeta:
-    'text-[10px] text-[var(--text-sub)] uppercase tracking-tighter whitespace-nowrap',
-  gradeScore: 'font-mono text-xl font-black transition-all duration-300',
+  gradeMeta:    'text-[10px] tracking-tighter text-[var(--text-sub)] uppercase whitespace-nowrap',
+  gradeScore:   'font-mono text-xl font-black transition-all duration-300',
 
-  announceItem:
-    'group flex justify-between items-center px-2 py-4 border-b border-[var(--ui-border)] last:border-0 cursor-pointer hover:bg-[var(--ui-bg)]/30 transition-all',
-  announceTitle:
-    'text-sm font-bold text-[var(--text-main)] group-hover:translate-x-1 transition-transform',
+  // [P1 FIX] cursor- 與 transition- 歸入 State 區
+  announceItem: 'group flex justify-between items-center px-2 py-4 border-b border-[var(--ui-border)] last:border-0 cursor-pointer transition-all hover:bg-[var(--ui-bg)]/30',
+  announceTitle:'text-sm font-bold text-[var(--text-main)] transition-transform group-hover:translate-x-1',
   announceDate: 'text-[9px] font-mono text-[var(--text-sub)] uppercase',
-  priorityTag:
-    'inline-block px-2 py-0.5 mr-2 bg-black text-white text-[8px] font-bold tracking-widest uppercase',
+  priorityTag:  'inline-block px-2 py-0.5 mr-2 bg-black text-white text-[8px] font-bold tracking-widest uppercase',
 
-  modalOverlay:
-    'fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm',
-  modalContent:
-    'relative flex flex-col w-full max-w-md overflow-hidden bg-[var(--ui-bg)] border border-black p-8 shadow-2xl theme-transition',
-  modalLine: 'absolute top-0 left-0 w-full h-[1px] bg-black',
-  formLabel:
-    'block mb-2 text-[10px] font-bold tracking-[0.2em] text-[var(--text-sub)] uppercase',
-  input:
-    'w-full px-4 py-3 mb-6 bg-transparent border border-[var(--ui-border)] text-sm text-[var(--text-main)] outline-none transition-colors focus:border-black theme-transition',
-  submitBtn:
-    'flex items-center justify-center gap-3 w-full py-4 bg-black text-white text-[10px] font-bold tracking-[0.3em] uppercase hover:bg-neutral-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed',
-  addBtn:
-    'flex items-center gap-2 px-4 py-2 border border-black text-[10px] font-bold tracking-widest uppercase hover:bg-black hover:text-white transition-all duration-300',
+  modalOverlay: 'fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm',
+  modalContent: 'relative flex flex-col w-full max-w-md overflow-hidden p-8 bg-[var(--ui-bg)] border border-black shadow-2xl theme-transition',
+  modalLine:    'absolute top-0 left-0 w-full h-[1px] bg-black',
+  formLabel:    'block mb-2 text-[10px] font-bold tracking-[0.2em] text-[var(--text-sub)] uppercase',
+  input:        'w-full px-4 py-3 mb-6 bg-transparent border border-[var(--ui-border)] text-sm text-[var(--text-main)] outline-none transition-colors focus:border-black theme-transition',
+  // [P1 FIX] disabled: 歸入 State 區尾端
+  submitBtn:    'flex items-center justify-center gap-3 w-full py-4 bg-black text-white text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-300 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed',
+  addBtn:       'flex items-center gap-2 px-4 py-2 border border-black text-[10px] font-bold tracking-widest uppercase transition-all duration-300 hover:bg-black hover:text-white',
 
-  pageBtn:
-    'px-3 py-1 border border-[var(--ui-border)] text-[9px] font-bold transition-all hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed',
-  pagination: 'flex justify-center items-center gap-4 mt-4 pt-4 border-t border-[var(--ui-border)]',
-  emptyText: 'py-12 text-center text-[var(--text-sub)] italic font-light',
+  pageBtn:      'px-3 py-1 border border-[var(--ui-border)] text-[9px] font-bold transition-all hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed',
+  pagination:   'flex justify-center items-center gap-4 mt-4 pt-4 border-t border-[var(--ui-border)]',
+  emptyText:    'py-12 text-center text-[var(--text-sub)] italic font-light',
 
-  successBox:
-    'mt-4 px-4 py-3 bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 text-center',
-  errorBox:
-    'mb-4 px-4 py-3 bg-red-50 border border-red-200 text-xs text-red-600 text-center',
+  successBox:   'mt-4 px-4 py-3 bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 text-center',
+  // [P1 FIX] 硬編碼 #EF4444 系列 → var(--color-danger-*)
+  errorBox:     'mb-4 px-4 py-3 bg-[var(--color-danger-bg)] border border-[var(--color-danger-border)] text-xs text-[var(--color-danger)] text-center',
 
-  // 學生打卡區塊樣式
-  studentCheckInWrapper: 'mt-12 mb-20',
-  studentCheckInCard: 'flex flex-col gap-6 p-10 bg-white border border-black/5 rounded-[2rem] shadow-sm theme-transition md:flex-row md:items-center md:justify-between',
-  checkInInfo: 'flex items-center gap-8',
-  checkInBox: 'flex items-center gap-4',
-  checkInIcon: 'flex items-center justify-center w-16 h-16 rotate-3 rounded-2xl bg-black text-white shadow-xl',
+  checkInWrapper: 'mt-12 mb-20',
+  checkInCard:  'flex flex-col gap-6 p-10 bg-white border border-black/5 rounded-[2rem] shadow-sm theme-transition md:flex-row md:items-center md:justify-between',
+  checkInInfo:  'flex items-center gap-8',
+  checkInBox:   'flex items-center gap-4',
+  checkInIcon:  'flex items-center justify-center w-16 h-16 rotate-3 rounded-2xl bg-black text-white shadow-xl',
   checkInCount: 'flex items-baseline gap-1',
-  weeklyProgress: 'hidden gap-2 lg:flex',
-  dot: 'w-3 h-3 rounded-full border border-black/10',
-  dotActive: 'bg-black shadow-[0_0_10px_rgba(0,0,0,0.2)]',
+  weeklyDots:   'hidden gap-2 lg:flex',
+  dot:          'w-3 h-3 rounded-full border border-black/10',
+  dotActive:    'bg-black shadow-[0_0_10px_rgba(0,0,0,0.2)]',
 } as const;
 
-const PER_PAGE_ANNOUNCE = 5;
-const PER_PAGE_MANAGE_GRADES = 10;
+const PER_PAGE_ANNOUNCE       = 5;
+const PER_PAGE_MANAGE_GRADES  = 10;
 const PER_PAGE_STUDENT_GRADES = 5;
+const EMPTY_GRADE: GradeFormState = { target_student_id: '', subject: '', term: '113-2', score: '', exam_date: '' };
 
-const EMPTY_NEW_GRADE: GradeFormState = {
-  target_student_id: '',
-  subject: '',
-  term: '113-2',
-  score: '',
-  exam_date: '',
+const getRoleLabel = (r?: UserRole) => ({ admin: '校長', teacher: '教師', staff: '教職員' }[r ?? ''] ?? '學生');
+
+const formatDate = (s: string | null) => {
+  if (!s) return '--';
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const getRoleLabel = (role?: UserRole) => {
-  if (role === 'admin') return '校長';
-  if (role === 'teacher') return '教師';
-  if (role === 'staff') return '教職員';
-  return '學生';
-};
-
-const formatDate = (dateStr: string | null) => {
-  if (!dateStr) return '--';
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) return dateStr;
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
-    date.getDate(),
-  ).padStart(2, '0')}`;
-};
-
+// [P1 FIX] 硬編碼色值全部改用 CSS Token
 const renderScore = (score: number) => {
-  if (score === 100) {
-    return (
-      <span className={`${STYLES.gradeScore} flex items-center gap-2 text-[#D4AF37]`}>
-        <Trophy size={16} aria-hidden="true" /> {score}
-      </span>
-    );
-  }
+  if (score === 100) return (
+    <span className={`${STYLES.gradeScore} flex items-center gap-2 text-[var(--score-gold)]`}>
+      <Trophy size={16} aria-hidden="true" /> {score}
+    </span>
+  );
   if (score >= 90) return <span className={`${STYLES.gradeScore} text-black`}>{score}</span>;
-  if (score < 60) {
-    return (
-      <span className={`${STYLES.gradeScore} flex items-center gap-1 text-[#E11D48]`}>
-        <AlertCircle size={14} aria-hidden="true" /> {score}
-      </span>
-    );
-  }
+  if (score < 60)  return (
+    <span className={`${STYLES.gradeScore} flex items-center gap-1 text-[var(--score-fail)]`}>
+      <AlertCircle size={14} aria-hidden="true" /> {score}
+    </span>
+  );
   if (score <= 70) return <span className={`${STYLES.gradeScore} text-neutral-400`}>{score}</span>;
   return <span className={`${STYLES.gradeScore} text-[var(--brand-primary)]`}>{score}</span>;
 };
@@ -217,99 +143,83 @@ const renderScore = (score: number) => {
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  // [P0] unmount 守衛
+  const isMountedRef = useRef(true);
+  useEffect(() => { isMountedRef.current = true; return () => { isMountedRef.current = false; }; }, []);
+
+  const [user,      setUser]      = useState<{ id: string; email: string } | null>(null);
+  const [profile,   setProfile]   = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [grades, setGrades] = useState<GradeRecord[]>([]);
-  const [allScores, setAllScores] = useState<number[]>([]);
-  const [gradePage, setGradePage] = useState(0);
-  const [totalGrades, setTotalGrades] = useState(0);
+  const [grades,             setGrades]             = useState<GradeRecord[]>([]);
+  const [allScores,          setAllScores]          = useState<number[]>([]);
+  const [gradePage,          setGradePage]          = useState(0);
+  const [totalGrades,        setTotalGrades]        = useState(0);
   const [lastUpdatedGradeId, setLastUpdatedGradeId] = useState<number | string | null>(null);
-  const [isGradeCreateOpen, setIsGradeCreateOpen] = useState(false);
-  const [isGradeSubmitting, setIsGradeSubmitting] = useState(false);
-  const [newGrade, setNewGrade] = useState<GradeFormState>(EMPTY_NEW_GRADE);
-  const [editingGrade, setEditingGrade] = useState<GradeRecord | null>(null);
+  const [isGradeCreateOpen,  setIsGradeCreateOpen]  = useState(false);
+  const [isGradeSubmitting,  setIsGradeSubmitting]  = useState(false);
+  const [newGrade,           setNewGrade]           = useState<GradeFormState>(EMPTY_GRADE);
+  const [editingGrade,       setEditingGrade]       = useState<GradeRecord | null>(null);
 
-  const [attendanceCount, setAttendanceCount] = useState(0);
+  const [attendanceCount,   setAttendanceCount]   = useState(0);
   const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
 
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [announcePage, setAnnouncePage] = useState(0);
-  const [totalAnnounce, setTotalAnnounce] = useState(0);
-  const [readIds, setReadIds] = useState<string[]>([]);
-  const [viewingAnnounce, setViewingAnnounce] = useState<Announcement | null>(null);
-  const [isAnnounceCreateOpen, setIsAnnounceCreateOpen] = useState(false);
-  const [newAnnounce, setNewAnnounce] = useState({ title: '', content: '', priority: false });
+  const [announcements,       setAnnouncements]       = useState<Announcement[]>([]);
+  const [announcePage,        setAnnouncePage]        = useState(0);
+  const [totalAnnounce,       setTotalAnnounce]       = useState(0);
+  const [readIds,             setReadIds]             = useState<string[]>([]);
+  const [viewingAnnounce,     setViewingAnnounce]     = useState<Announcement | null>(null);
+  const [isAnnounceCreateOpen,setIsAnnounceCreateOpen]= useState(false);
+  const [newAnnounce,         setNewAnnounce]         = useState({ title: '', content: '', priority: false });
 
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [isInviting, setIsInviting] = useState(false);
+  const [isInviteOpen,  setIsInviteOpen]  = useState(false);
+  const [isInviting,    setIsInviting]    = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState('');
-  const [inviteError, setInviteError] = useState('');
-  const [newInvite, setNewInvite] = useState({
-    email: '',
-    full_name: '',
-    class_name: '',
-    student_no: '',
-  });
+  const [inviteError,   setInviteError]   = useState('');
+  const [newInvite,     setNewInvite]     = useState({ email: '', full_name: '', class_name: '', student_no: '' });
 
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
-  const role = profile?.role;
-  const isAdmin = role === 'admin';
-  const isTeacher = role === 'teacher';
-  const isStaff = role === 'staff';
-  const isStudent = role === 'student';
-  const canManageGrades = isAdmin || isTeacher;
-  const canUseStaffCheckIn = isTeacher || isStaff;
-  const gradePerPage = isStudent ? PER_PAGE_STUDENT_GRADES : PER_PAGE_MANAGE_GRADES;
+  const role              = profile?.role;
+  const isAdmin           = role === 'admin';
+  const isTeacher         = role === 'teacher';
+  const isStaff           = role === 'staff';
+  const isStudent         = role === 'student';
+  const canManageGrades   = isAdmin || isTeacher;
+  const canUseStaffCheckIn= isTeacher || isStaff;
+  const gradePerPage      = isStudent ? PER_PAGE_STUDENT_GRADES : PER_PAGE_MANAGE_GRADES;
 
   const averageScore = useMemo(() => {
-    if (allScores.length === 0) return '0';
-    const avg = allScores.reduce((sum, s) => sum + s, 0) / allScores.length;
-    return avg.toFixed(1);
+    if (!allScores.length) return '0';
+    return (allScores.reduce((s, v) => s + v, 0) / allScores.length).toFixed(1);
   }, [allScores]);
 
-  const hasUnread = useMemo(
-    () => announcements.some((item) => !readIds.includes(item.id)),
-    [announcements, readIds],
-  );
+  const hasUnread       = useMemo(() => announcements.some((a) => !readIds.includes(a.id)), [announcements, readIds]);
+  const weeklyProgress  = useMemo(() => (!attendanceCount ? 0 : attendanceCount % 7 || 7), [attendanceCount]);
 
-  const weeklyProgress = useMemo(() => {
-    if (attendanceCount <= 0) return 0;
-    return attendanceCount % 7 || 7;
-  }, [attendanceCount]);
-
-  const showToast = (messageZh: string, type: ToastType = 'success') => {
-    setToast({ message: messageZh, type });
+  // [P0] showToast with isMountedRef
+  const showToast = (msg: string, type: ToastType = 'success') => {
+    if (!isMountedRef.current) return;
+    setToast({ message: msg, type });
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
+      if (isMountedRef.current) setToast(null);
       toastTimerRef.current = null;
     }, 2800);
   };
+  useEffect(() => () => { if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current); }, []);
 
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
+  /* ── Fetchers ──────────────────────────────────────────────── */
   const fetchAnnouncements = async () => {
     if (!supabase) return;
     const from = announcePage * PER_PAGE_ANNOUNCE;
-    const to = from + PER_PAGE_ANNOUNCE - 1;
-    const { data, error, count } = await supabase
-      .from('announcements')
+    const { data, error, count } = await supabase.from('announcements')
       .select('*', { count: 'exact' })
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(from, to);
-    if (error) {
-      showToast(`載入公告失敗：${error.message}`, 'error');
-      return;
-    }
+      .order('priority', { ascending: false }).order('created_at', { ascending: false })
+      .range(from, from + PER_PAGE_ANNOUNCE - 1);
+    if (!isMountedRef.current) return;
+    if (error) { showToast(`載入公告失敗：${error.message}`, 'error'); return; }
     setAnnouncements((data ?? []) as Announcement[]);
     setTotalAnnounce(count ?? 0);
   };
@@ -317,372 +227,199 @@ export const Dashboard: React.FC = () => {
   const fetchGrades = async (studentId?: string) => {
     if (!supabase) return;
     const from = gradePage * gradePerPage;
-    const to = from + gradePerPage - 1;
-
-    let query = supabase
-      .from('grade_records')
-      .select('id, student_id, subject, term, score, exam_date, graded_at, created_by', {
-        count: 'exact',
-      });
-    if (studentId) query = query.eq('student_id', studentId);
-
-    const { data, error, count } = await query.order('graded_at', { ascending: false }).range(from, to);
-    if (error) {
-      showToast(`載入成績失敗：${error.message}`, 'error');
-      return;
-    }
-
+    let q = supabase.from('grade_records')
+      .select('id, student_id, subject, term, score, exam_date, graded_at, created_by', { count: 'exact' });
+    if (studentId) q = q.eq('student_id', studentId);
+    const { data, error, count } = await q.order('graded_at', { ascending: false }).range(from, from + gradePerPage - 1);
+    if (!isMountedRef.current) return;
+    if (error) { showToast(`載入成績失敗：${error.message}`, 'error'); return; }
     let rows = (data ?? []) as GradeRecord[];
     if (canManageGrades && rows.length > 0) {
-      const studentIds = [...new Set(rows.map((grade) => grade.student_id).filter(Boolean))];
-      if (studentIds.length > 0) {
-        const { data: profileRows, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, full_name, student_no, class_name')
-          .in('id', studentIds);
-
-        if (!profileError && profileRows) {
-          const map = new Map<string, GradeProfile>();
-          (profileRows as any[]).forEach((row) => {
-            map.set(row.id, {
-              full_name: row.full_name ?? null,
-              student_no: row.student_no ?? null,
-              class_name: row.class_name ?? null,
-            });
-          });
-          rows = rows.map((grade) => ({ ...grade, profile: map.get(grade.student_id) }));
-        }
+      const ids = [...new Set(rows.map((g) => g.student_id))];
+      const { data: pr, error: pe } = await supabase.from('profiles')
+        .select('id, full_name, student_no, class_name').in('id', ids);
+      if (!isMountedRef.current) return;
+      if (!pe && pr) {
+        const map = new Map<string, GradeProfile>();
+        (pr as any[]).forEach((r) => map.set(r.id, { full_name: r.full_name, student_no: r.student_no, class_name: r.class_name }));
+        rows = rows.map((g) => ({ ...g, profile: map.get(g.student_id) }));
       }
     }
-
-    setGrades(rows);
-    setTotalGrades(count ?? 0);
+    setGrades(rows); setTotalGrades(count ?? 0);
   };
 
-  const fetchAllStudentScores = async (studentId: string) => {
+  const fetchAllStudentScores = async (sid: string) => {
     if (!supabase) return;
-    const { data, error } = await supabase
-      .from('grade_records')
-      .select('score')
-      .eq('student_id', studentId);
-    if (!error && data) {
-      setAllScores(data.map((r: { score: number }) => Number(r.score)));
-    }
+    const { data, error } = await supabase.from('grade_records').select('score').eq('student_id', sid);
+    if (!isMountedRef.current) return;
+    if (!error && data) setAllScores(data.map((r: { score: number }) => Number(r.score)));
   };
 
-  const fetchStudentAttendance = async (studentId: string) => {
+  const fetchStudentAttendance = async (sid: string) => {
     if (!supabase) return;
-    const { count, error } = await supabase
-      .from('attendance_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('student_id', studentId)
-      .eq('check_type', 'in');
+    const { count, error } = await supabase.from('attendance_logs')
+      .select('*', { count: 'exact', head: true }).eq('student_id', sid).eq('check_type', 'in');
+    if (!isMountedRef.current) return;
     if (!error) setAttendanceCount(count ?? 0);
-
     const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
-    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
-    const { data: todayLogs } = await supabase
-      .from('attendance_logs')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('check_type', 'in')
-      .gte('checked_at', dayStart)
-      .lte('checked_at', dayEnd)
-      .limit(1);
-    setHasCheckedInToday((todayLogs?.length ?? 0) > 0);
+    const s = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+    const e = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+    const { data: tl } = await supabase.from('attendance_logs').select('id')
+      .eq('student_id', sid).eq('check_type', 'in').gte('checked_at', s).lte('checked_at', e).limit(1);
+    if (!isMountedRef.current) return;
+    setHasCheckedInToday((tl?.length ?? 0) > 0);
   };
 
+  /* ── Effects ───────────────────────────────────────────────── */
   useEffect(() => {
     const stored = localStorage.getItem('readAnnouncements');
     if (!stored) return;
     try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) setReadIds(parsed.filter((value) => typeof value === 'string'));
-    } catch {
-      localStorage.removeItem('readAnnouncements');
-    }
+      const p = JSON.parse(stored);
+      if (Array.isArray(p)) setReadIds(p.filter((v) => typeof v === 'string'));
+    } catch { localStorage.removeItem('readAnnouncements'); }
   }, []);
 
   useEffect(() => {
     const init = async () => {
-      if (!supabase) {
-        setIsLoading(false);
-        return;
-      }
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      if (!currentUser) {
-        navigate('/login');
-        return;
-      }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email, role, status, student_no, full_name, class_name')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (profileError || !profileData) {
-        await supabase.auth.signOut();
-        navigate('/login?error=no_profile');
-        return;
-      }
-      if (profileData.status !== 'active') {
-        await supabase.auth.signOut();
-        navigate(`/login?error=${profileData.status}`);
-        return;
-      }
-
-      setUser({ id: currentUser.id, email: currentUser.email ?? '' });
-      setProfile(profileData as Profile);
-      setIsLoading(false);
+      if (!supabase) { if (isMountedRef.current) setIsLoading(false); return; }
+      const { data: { user: cu } } = await supabase.auth.getUser();
+      if (!isMountedRef.current) return;
+      if (!cu) { navigate('/login'); return; }
+      const { data: pd, error: pe } = await supabase.from('profiles')
+        .select('id, email, role, status, student_no, full_name, class_name').eq('id', cu.id).single();
+      if (!isMountedRef.current) return;
+      if (pe || !pd) { await supabase.auth.signOut(); navigate('/login?error=no_profile'); return; }
+      if (pd.status !== 'active') { await supabase.auth.signOut(); navigate(`/login?error=${pd.status}`); return; }
+      setUser({ id: cu.id, email: cu.email ?? '' }); setProfile(pd as Profile); setIsLoading(false);
     };
     init();
   }, [navigate]);
 
-  useEffect(() => {
-    if (isLoading || !user) return;
-    fetchAnnouncements();
-  }, [isLoading, user, announcePage]);
-
+  useEffect(() => { if (!isLoading && user) fetchAnnouncements(); }, [isLoading, user, announcePage]);
   useEffect(() => {
     if (isLoading || !user || !profile) return;
-    if (canManageGrades) {
-      fetchGrades();
-      return;
-    }
-    if (isStudent) {
-      fetchGrades(user.id);
-      return;
-    }
-    setGrades([]);
-    setTotalGrades(0);
+    if (canManageGrades) { fetchGrades(); return; }
+    if (isStudent) { fetchGrades(user.id); return; }
+    setGrades([]); setTotalGrades(0);
   }, [isLoading, user, profile, canManageGrades, isStudent, gradePage]);
-
   useEffect(() => {
-    if (isLoading || !user || !isStudent) return;
-    fetchStudentAttendance(user.id);
-    fetchAllStudentScores(user.id);
+    if (!isLoading && user && isStudent) { fetchStudentAttendance(user.id); fetchAllStudentScores(user.id); }
   }, [isLoading, user, isStudent]);
 
-  const handleLogout = async () => {
-    if (supabase) await supabase.auth.signOut();
-    navigate('/login');
+  /* ── Handlers ──────────────────────────────────────────────── */
+  const handleLogout = async () => { if (supabase) await supabase.auth.signOut(); navigate('/login'); };
+
+  const handleOpenAnnouncement = (a: Announcement) => {
+    setViewingAnnounce(a);
+    if (readIds.includes(a.id)) return;
+    const next = [...readIds, a.id];
+    setReadIds(next); localStorage.setItem('readAnnouncements', JSON.stringify(next));
   };
 
-  const handleOpenAnnouncement = (announcement: Announcement) => {
-    setViewingAnnounce(announcement);
-    if (readIds.includes(announcement.id)) return;
-    const nextReadIds = [...readIds, announcement.id];
-    setReadIds(nextReadIds);
-    localStorage.setItem('readAnnouncements', JSON.stringify(nextReadIds));
-  };
-
-  const handleAddAnnouncement = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!supabase || !isAdmin) return;
-    const title = newAnnounce.title.trim();
-    const content = newAnnounce.content.trim();
-    if (!title || !content) {
-      showToast('請填寫公告標題與內容。', 'error');
-      return;
-    }
-
-    const { error } = await supabase.from('announcements').insert([
-      { title, content, priority: newAnnounce.priority },
-    ]);
-    if (error) {
-      showToast(`發佈公告失敗：${error.message}`, 'error');
-      return;
-    }
-
-    setIsAnnounceCreateOpen(false);
-    setNewAnnounce({ title: '', content: '', priority: false });
+  const handleAddAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!supabase || !isAdmin) return;
+    const title = newAnnounce.title.trim(); const content = newAnnounce.content.trim();
+    if (!title || !content) { showToast('請填寫公告標題與內容。', 'error'); return; }
+    const { error } = await supabase.from('announcements').insert([{ title, content, priority: newAnnounce.priority }]);
+    if (!isMountedRef.current) return;
+    if (error) { showToast(`發佈公告失敗：${error.message}`, 'error'); return; }
+    setIsAnnounceCreateOpen(false); setNewAnnounce({ title: '', content: '', priority: false });
     showToast('公告已發佈！');
-    if (announcePage !== 0) setAnnouncePage(0);
-    else fetchAnnouncements();
+    if (announcePage !== 0) setAnnouncePage(0); else fetchAnnouncements();
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
-    if (!supabase || !isAdmin) return;
-    if (!window.confirm('確定要刪除此公告嗎？')) return;
+    if (!supabase || !isAdmin || !window.confirm('確定要刪除此公告嗎？')) return;
     const { error } = await supabase.from('announcements').delete().eq('id', id);
-    if (error) {
-      showToast(`刪除公告失敗：${error.message}`, 'error');
-      return;
-    }
-
-    showToast('公告已刪除。');
-    setViewingAnnounce(null);
-    if (announcements.length === 1 && announcePage > 0) setAnnouncePage((prev) => prev - 1);
-    else fetchAnnouncements();
+    if (!isMountedRef.current) return;
+    if (error) { showToast(`刪除公告失敗：${error.message}`, 'error'); return; }
+    showToast('公告已刪除。'); setViewingAnnounce(null);
+    if (announcements.length === 1 && announcePage > 0) setAnnouncePage((p) => p - 1); else fetchAnnouncements();
   };
 
-  const handleAddGrade = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!supabase || !user || !canManageGrades) return;
-
-    const subject = newGrade.subject.trim();
-    const studentId = newGrade.target_student_id.trim();
-    const term = newGrade.term.trim() || '113-2';
-    const score = Number(newGrade.score);
-    if (!studentId || !subject || Number.isNaN(score)) {
-      showToast('請完整輸入成績資料。', 'error');
-      return;
-    }
-
+  const handleAddGrade = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!supabase || !user || !canManageGrades) return;
+    const sid = newGrade.target_student_id.trim(); const subject = newGrade.subject.trim();
+    const term = newGrade.term.trim() || '113-2'; const score = Number(newGrade.score);
+    if (!sid || !subject || isNaN(score)) { showToast('請完整輸入成績資料。', 'error'); return; }
     setIsGradeSubmitting(true);
-    const { data, error } = await supabase
-      .from('grade_records')
-      .insert([
-        {
-          student_id: studentId,
-          subject,
-          term,
-          score,
-          exam_date: newGrade.exam_date || null,
-          created_by: user.id,
-        },
-      ])
-      .select('id')
-      .single();
+    const { data, error } = await supabase.from('grade_records')
+      .insert([{ student_id: sid, subject, term, score, exam_date: newGrade.exam_date || null, created_by: user.id }])
+      .select('id').single();
+    if (!isMountedRef.current) return;
     setIsGradeSubmitting(false);
-
-    if (error) {
-      showToast(`新增成績失敗：${error.message}`, 'error');
-      return;
-    }
-
-    setIsGradeCreateOpen(false);
-    setNewGrade(EMPTY_NEW_GRADE);
-    setLastUpdatedGradeId((data as any)?.id ?? null);
-    showToast('成績新增成功！');
-    window.setTimeout(() => setLastUpdatedGradeId(null), 3000);
-    if (gradePage !== 0) setGradePage(0);
-    else fetchGrades();
+    if (error) { showToast(`新增成績失敗：${error.message}`, 'error'); return; }
+    setIsGradeCreateOpen(false); setNewGrade(EMPTY_GRADE);
+    setLastUpdatedGradeId((data as any)?.id ?? null); showToast('成績新增成功！');
+    window.setTimeout(() => { if (isMountedRef.current) setLastUpdatedGradeId(null); }, 3000);
+    if (gradePage !== 0) setGradePage(0); else fetchGrades();
   };
 
-  const openEditGrade = (grade: GradeRecord) => setEditingGrade({ ...grade });
-
-  const handleUpdateGrade = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!supabase || !editingGrade || !canManageGrades) return;
-    const subject = editingGrade.subject.trim();
-    const term = editingGrade.term.trim();
-    const score = Number(editingGrade.score);
-    if (!subject || !term || Number.isNaN(score)) {
-      showToast('請完整輸入成績資料。', 'error');
-      return;
-    }
-
+  const handleUpdateGrade = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!supabase || !editingGrade || !canManageGrades) return;
+    const { subject, term, score, exam_date, id } = editingGrade;
+    if (!subject.trim() || !term.trim() || isNaN(Number(score))) { showToast('請完整輸入成績資料。', 'error'); return; }
     setIsGradeSubmitting(true);
-    const { error } = await supabase
-      .from('grade_records')
-      .update({
-        subject,
-        term,
-        score,
-        exam_date: editingGrade.exam_date || null,
-      })
-      .eq('id', editingGrade.id);
+    const { error } = await supabase.from('grade_records')
+      .update({ subject: subject.trim(), term: term.trim(), score: Number(score), exam_date: exam_date || null }).eq('id', id);
+    if (!isMountedRef.current) return;
     setIsGradeSubmitting(false);
-
-    if (error) {
-      showToast(`更新成績失敗：${error.message}`, 'error');
-      return;
-    }
-
-    setLastUpdatedGradeId(editingGrade.id);
-    setEditingGrade(null);
-    showToast('成績已更新！');
-    window.setTimeout(() => setLastUpdatedGradeId(null), 3000);
+    if (error) { showToast(`更新成績失敗：${error.message}`, 'error'); return; }
+    setLastUpdatedGradeId(id); setEditingGrade(null); showToast('成績已更新！');
+    window.setTimeout(() => { if (isMountedRef.current) setLastUpdatedGradeId(null); }, 3000);
     fetchGrades();
   };
 
-  const handleDeleteGrade = async (gradeId: number | string) => {
-    if (!supabase || !canManageGrades) return;
-    if (!window.confirm('確定要刪除此成績嗎？')) return;
-    const { error } = await supabase.from('grade_records').delete().eq('id', gradeId);
-    if (error) {
-      showToast(`刪除成績失敗：${error.message}`, 'error');
-      return;
-    }
+  const handleDeleteGrade = async (gid: number | string) => {
+    if (!supabase || !canManageGrades || !window.confirm('確定要刪除此成績嗎？')) return;
+    const { error } = await supabase.from('grade_records').delete().eq('id', gid);
+    if (!isMountedRef.current) return;
+    if (error) { showToast(`刪除成績失敗：${error.message}`, 'error'); return; }
     showToast('成績已刪除。');
-    if (grades.length === 1 && gradePage > 0) setGradePage((prev) => prev - 1);
-    else fetchGrades();
+    if (grades.length === 1 && gradePage > 0) setGradePage((p) => p - 1); else fetchGrades();
   };
 
-  const handleInviteStudent = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!supabase || !isAdmin) return;
-
-    setIsInviting(true);
-    setInviteError('');
-    setInviteSuccess('');
-
-    const payload = {
-      email: newInvite.email.trim(),
-      full_name: newInvite.full_name.trim() || null,
-      class_name: newInvite.class_name.trim() || null,
-      student_no: newInvite.student_no.trim() || null,
-    };
-
-    if (!payload.email) {
-      setIsInviting(false);
-      showToast('請輸入學生 Email。', 'error');
-      return;
-    }
-
+  const handleInviteStudent = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!supabase || !isAdmin) return;
+    setIsInviting(true); setInviteError(''); setInviteSuccess('');
+    const payload = { email: newInvite.email.trim(), full_name: newInvite.full_name.trim() || null, class_name: newInvite.class_name.trim() || null, student_no: newInvite.student_no.trim() || null };
+    if (!payload.email) { setIsInviting(false); showToast('請輸入學生 Email。', 'error'); return; }
     try {
       const { data, error } = await supabase.functions.invoke('invite-student', { body: payload });
+      if (!isMountedRef.current) return;
       if (error) {
-        const context = (error as any)?.context;
-        let detailMessage = (data as any)?.error || '';
-        if (!detailMessage && context && typeof context.json === 'function') {
-          const detailBody = await context.json().catch(() => null);
-          detailMessage = detailBody?.error || '';
-        }
-        throw new Error(detailMessage || error.message || '邀請發送失敗');
+        const ctx = (error as any)?.context;
+        let msg = (data as any)?.error || '';
+        if (!msg && ctx && typeof ctx.json === 'function') { const b = await ctx.json().catch(() => null); if (!isMountedRef.current) return; msg = b?.error || ''; }
+        throw new Error(msg || error.message || '邀請發送失敗');
       }
-
-      const successMessage = (data as any)?.message || `邀請已發送：${payload.email}`;
-      setInviteSuccess(successMessage);
-      setNewInvite({ email: '', full_name: '', class_name: '', student_no: '' });
-      showToast('邀請發送成功！');
-    } catch (error: any) {
-      const message = error?.message || '邀請失敗，請重試。';
-      setInviteError(message);
-      showToast(message, 'error');
-    } finally {
-      setIsInviting(false);
-    }
+      setInviteSuccess((data as any)?.message || `邀請已發送：${payload.email}`);
+      setNewInvite({ email: '', full_name: '', class_name: '', student_no: '' }); showToast('邀請發送成功！');
+    } catch (err: any) {
+      if (!isMountedRef.current) return;
+      const msg = err?.message || '邀請失敗，請重試。'; setInviteError(msg); showToast(msg, 'error');
+    } finally { if (isMountedRef.current) setIsInviting(false); }
   };
 
-  const roleTitle = isAdmin
-    ? '您好，校長'
-    : isTeacher
-      ? '您好，教師'
-      : isStaff
-        ? '您好，教職員'
-        : '歡迎回來';
+  const roleTitle = isAdmin ? '您好，校長' : isTeacher ? '您好，教師' : isStaff ? '您好，教職員' : '歡迎回來';
 
-  if (isLoading) {
-    return (
-      <section className={STYLES.wrapper} aria-label="載入中">
-        <div className={STYLES.container}>
-          <div className="flex min-h-[50vh] items-center justify-center">
-            <Loader2 size={32} className="animate-spin text-black" />
-          </div>
+  if (isLoading) return (
+    <section className={STYLES.wrapper} aria-label="載入中">
+      <div className={STYLES.container}>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-black" />
         </div>
-      </section>
-    );
-  }
+      </div>
+    </section>
+  );
 
+  /* ── JSX ───────────────────────────────────────────────────── */
   return (
     <section className={STYLES.wrapper} aria-label="儀表板">
       <div className={STYLES.container}>
+
+        {/* Header */}
         <header className={STYLES.header}>
           <div className={STYLES.headerLeft}>
             <div className={STYLES.headerIcon}>
@@ -691,437 +428,242 @@ export const Dashboard: React.FC = () => {
             <div>
               <h1 className={STYLES.title}>{roleTitle}</h1>
               <p className={STYLES.subtitle}>
-                {isStudent && profile?.student_no && (
-                  <span className="mr-2 font-mono text-[var(--brand-primary)]">{profile.student_no}</span>
-                )}
+                {isStudent && profile?.student_no && <span className="mr-2 font-mono text-[var(--brand-primary)]">{profile.student_no}</span>}
                 {profile?.full_name ?? user?.email?.split('@')[0]}，目前身份：{getRoleLabel(role)}
               </p>
             </div>
           </div>
-
           <div className={STYLES.headerRight}>
             <div className="relative">
-              <Bell
-                size={20}
-                className={hasUnread ? 'animate-bounce text-[var(--brand-primary)]' : 'text-black/20'}
-                aria-hidden="true"
-              />
-              {hasUnread && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#E11D48] border-2 border-white" />
-              )}
+              <Bell size={20} className={hasUnread ? 'animate-bounce text-[var(--brand-primary)]' : 'text-black/20'} aria-hidden="true" />
+              {/* [P1 FIX] #E11D48 → var(--color-badge) */}
+              {hasUnread && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--color-badge)] border-2 border-white" />}
             </div>
-
             {isAdmin && (
-              <button
-                onClick={() => navigate('/check-in')}
-                className={STYLES.modeBtn}
-              >
-                <Monitor size={14} />
-                打卡模式
+              <button onClick={() => navigate('/check-in')} className={STYLES.modeBtn}>
+                <Monitor size={14} aria-hidden="true" /> 打卡模式
               </button>
             )}
-
-            <button onClick={handleLogout} className={STYLES.logoutBtn} aria-label="登出">
-              登出
-            </button>
+            <button onClick={handleLogout} className={STYLES.logoutBtn} aria-label="登出">登出</button>
           </div>
         </header>
 
+        {/* Bento */}
         <main className={`${STYLES.bentoContainer} mb-10 md:mb-12`}>
+
+          {/* 公告 */}
           <section className={`${STYLES.bentoItem} ${STYLES.bentoLarge}`}>
             <div className={STYLES.bentoHeader}>
               <div className={`${STYLES.itemHeader} mb-0`}>
-                <div className={STYLES.iconBox}>
-                  <Clock size={20} aria-hidden="true" />
-                </div>
+                <div className={STYLES.iconBox}><Clock size={20} aria-hidden="true" /></div>
                 <div className="flex items-center gap-2">
                   <span className={STYLES.cardLabel}>公告</span>
                   {hasUnread && <span className="w-2 h-2 rounded-full bg-[var(--brand-primary)] animate-pulse" />}
                 </div>
               </div>
-
-              {isAdmin && (
-                <button onClick={() => setIsAnnounceCreateOpen(true)} className={STYLES.addBtn}>
-                  <Plus size={12} aria-hidden="true" /> 發佈
-                </button>
-              )}
+              {isAdmin && <button onClick={() => setIsAnnounceCreateOpen(true)} className={STYLES.addBtn}><Plus size={12} aria-hidden="true" /> 發佈</button>}
             </div>
-
-            <div className={STYLES.bentoScrollArea}>
+            <div className={STYLES.bentoScroll}>
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={announcePage}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {announcements.length > 0 ? (
-                    announcements.map((announcement) => {
-                      const isRead = readIds.includes(announcement.id);
-                      return (
-                        <div
-                          key={announcement.id}
-                          className={`${STYLES.announceItem} ${isRead ? 'opacity-60' : ''}`}
-                          onClick={() => handleOpenAnnouncement(announcement)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              handleOpenAnnouncement(announcement);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div className="flex flex-col">
-                            <div className="flex items-center">
-                              {announcement.priority && <span className={STYLES.priorityTag}>置頂</span>}
-                              <span className={STYLES.announceTitle}>{announcement.title}</span>
-                            </div>
-                            <span className={STYLES.announceDate}>{formatDate(announcement.created_at)}</span>
+                <motion.div key={announcePage} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.25 }}>
+                  {announcements.length > 0 ? announcements.map((ann) => {
+                    const isRead = readIds.includes(ann.id);
+                    return (
+                      <div key={ann.id} className={`${STYLES.announceItem} ${isRead ? 'opacity-60' : ''}`}
+                        onClick={() => handleOpenAnnouncement(ann)}
+                        onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); handleOpenAnnouncement(ann); } }}
+                        role="button" tabIndex={0}
+                      >
+                        <div className="flex flex-col">
+                          <div className="flex items-center">
+                            {ann.priority && <span className={STYLES.priorityTag}>置頂</span>}
+                            <span className={STYLES.announceTitle}>{ann.title}</span>
                           </div>
-                          {!isRead && <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-primary)]" />}
+                          <span className={STYLES.announceDate}>{formatDate(ann.created_at)}</span>
                         </div>
-                      );
-                    })
-                  ) : (
-                    <div className={STYLES.emptyText}>目前沒有公告。</div>
-                  )}
+                        {!isRead && <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-primary)]" />}
+                      </div>
+                    );
+                  }) : <div className={STYLES.emptyText}>目前沒有公告。</div>}
                 </motion.div>
               </AnimatePresence>
             </div>
-
             {announcements.length > 0 && (
               <div className={STYLES.pagination}>
-                <button
-                  disabled={announcePage === 0}
-                  onClick={() => setAnnouncePage((prev) => prev - 1)}
-                  className={STYLES.pageBtn}
-                >
-                  上一頁
-                </button>
-                <span className="text-[10px] font-mono tracking-widest uppercase">
-                  {announcePage + 1} / {Math.max(1, Math.ceil(totalAnnounce / PER_PAGE_ANNOUNCE))}
-                </span>
-                <button
-                  disabled={(announcePage + 1) * PER_PAGE_ANNOUNCE >= totalAnnounce}
-                  onClick={() => setAnnouncePage((prev) => prev + 1)}
-                  className={STYLES.pageBtn}
-                >
-                  下一頁
-                </button>
+                <button disabled={announcePage === 0} onClick={() => setAnnouncePage((p) => p - 1)} className={STYLES.pageBtn}>上一頁</button>
+                <span className="text-[10px] font-mono tracking-widest uppercase">{announcePage + 1} / {Math.max(1, Math.ceil(totalAnnounce / PER_PAGE_ANNOUNCE))}</span>
+                <button disabled={(announcePage + 1) * PER_PAGE_ANNOUNCE >= totalAnnounce} onClick={() => setAnnouncePage((p) => p + 1)} className={STYLES.pageBtn}>下一頁</button>
               </div>
             )}
           </section>
 
+          {/* 邀請學生 */}
           {isAdmin && (
             <section className={STYLES.bentoItem}>
               <div className={`${STYLES.itemHeader} mb-0`}>
-                <div className={STYLES.iconBox}>
-                  <UserPlus size={20} aria-hidden="true" />
-                </div>
+                <div className={STYLES.iconBox}><UserPlus size={20} aria-hidden="true" /></div>
                 <span className={STYLES.cardLabel}>邀請學生</span>
               </div>
-              <p className="my-4 text-xs leading-relaxed text-[var(--text-sub)] theme-transition">
-                以 email、學生姓名、班級、學號邀請學生加入帳號。
-              </p>
-              <button
-                onClick={() => {
-                  setIsInviteOpen(true);
-                  setInviteSuccess('');
-                  setInviteError('');
-                }}
-                className={STYLES.addBtn}
-              >
-                <Plus size={12} aria-hidden="true" /> 發送邀請
-              </button>
+              <p className="my-4 text-xs leading-relaxed text-[var(--text-sub)] theme-transition">以 email、學生姓名、班級、學號邀請學生加入帳號。</p>
+              <button onClick={() => { setIsInviteOpen(true); setInviteSuccess(''); setInviteError(''); }} className={STYLES.addBtn}><Plus size={12} aria-hidden="true" /> 發送邀請</button>
             </section>
           )}
 
+          {/* 教職員打卡 */}
           {canUseStaffCheckIn && (
-            <section className={`${STYLES.bentoItem} p-4 md:p-4 justify-start`}>
+            <section className={`${STYLES.bentoItem} justify-start p-4 md:p-4`}>
               <StaffCheckIn onToast={showToast} />
             </section>
           )}
 
+          {/* 學生成績單 */}
           {isStudent && (
             <section className={`${STYLES.bentoItem} ${STYLES.bentoLarge}`}>
               <div className="flex justify-between items-start mb-6 w-full px-2">
                 <div className={`${STYLES.itemHeader} mb-0`}>
-                  <div className={STYLES.iconBox}>
-                    <Award size={20} aria-hidden="true" />
-                  </div>
+                  <div className={STYLES.iconBox}><Award size={20} aria-hidden="true" /></div>
                   <span className={STYLES.cardLabel}>學期成績單</span>
                 </div>
               </div>
-
-              <div className="hidden md:grid md:grid-cols-4 px-4 py-2 bg-[var(--ui-bg)] border-y border-[var(--ui-border)] text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase">
-                <span>科目</span>
-                <span>學期</span>
-                <span>測驗日期</span>
-                <span className="text-right">分數</span>
+              <div className="hidden px-4 py-2 bg-[var(--ui-bg)] border-y border-[var(--ui-border)] text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase md:grid md:grid-cols-4">
+                <span>科目</span><span>學期</span><span>測驗日期</span><span className="text-right">分數</span>
               </div>
-
               <div className="flex-1 overflow-y-auto pr-2 mt-2">
                 <AnimatePresence mode="wait">
-                  <motion.div
-                    key={gradePage}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {grades.length > 0 ? (
-                      grades.map((grade) => (
-                        <motion.div
-                          key={grade.id}
-                          className="px-4 py-4 border-b border-[var(--ui-border)] last:border-0 hover:bg-[var(--ui-bg)]/50 transition-colors"
-                          initial={lastUpdatedGradeId === grade.id ? { backgroundColor: 'rgba(0,0,0,0.07)' } : false}
-                          animate={{ backgroundColor: 'transparent' }}
-                          transition={{ duration: 1.6 }}
-                        >
-                          <div className="flex items-start justify-between gap-3 md:hidden">
-                            <span className={STYLES.gradeSubject}>{grade.subject}</span>
-                            <div className="text-right">{renderScore(Number(grade.score || 0))}</div>
-                          </div>
-                          <div className="mt-2 flex items-center gap-2 md:hidden">
-                            <span className={STYLES.gradeMeta}>{grade.term}</span>
-                            <span className="text-[9px] text-[var(--text-sub)]">/</span>
-                            <span className={STYLES.gradeMeta}>{formatDate(grade.exam_date)}</span>
-                          </div>
-
-                          <div className={`hidden md:grid ${STYLES.gradeRow} md:grid-cols-4 md:px-0 md:py-0 md:border-0 md:hover:bg-transparent`}>
-                            <span className={STYLES.gradeSubject}>{grade.subject}</span>
-                            <span className={STYLES.gradeMeta}>{grade.term}</span>
-                            <span className={STYLES.gradeMeta}>{formatDate(grade.exam_date)}</span>
-                            <div className="text-right">{renderScore(Number(grade.score || 0))}</div>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className={STYLES.emptyText}>目前沒有成績資料。</div>
-                    )}
+                  <motion.div key={gradePage} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.25 }}>
+                    {grades.length > 0 ? grades.map((g) => (
+                      <motion.div key={g.id} className="px-4 py-4 border-b border-[var(--ui-border)] last:border-0 transition-colors hover:bg-[var(--ui-bg)]/50"
+                        initial={lastUpdatedGradeId === g.id ? { backgroundColor: 'rgba(0,0,0,0.07)' } : false}
+                        animate={{ backgroundColor: 'transparent' }} transition={{ duration: 1.6 }}
+                      >
+                        <div className="flex items-start justify-between gap-3 md:hidden">
+                          <span className={STYLES.gradeSubject}>{g.subject}</span>
+                          <div className="text-right">{renderScore(Number(g.score || 0))}</div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 md:hidden">
+                          <span className={STYLES.gradeMeta}>{g.term}</span>
+                          <span className="text-[9px] text-[var(--text-sub)]">/</span>
+                          <span className={STYLES.gradeMeta}>{formatDate(g.exam_date)}</span>
+                        </div>
+                        <div className={`hidden md:grid ${STYLES.gradeRow} md:grid-cols-4 md:border-0 md:px-0 md:py-0 md:hover:bg-transparent`}>
+                          <span className={STYLES.gradeSubject}>{g.subject}</span>
+                          <span className={STYLES.gradeMeta}>{g.term}</span>
+                          <span className={STYLES.gradeMeta}>{formatDate(g.exam_date)}</span>
+                          <div className="text-right">{renderScore(Number(g.score || 0))}</div>
+                        </div>
+                      </motion.div>
+                    )) : <div className={STYLES.emptyText}>目前沒有成績資料。</div>}
                   </motion.div>
                 </AnimatePresence>
               </div>
-
               {grades.length > 0 && (
                 <div className={STYLES.pagination}>
-                  <button
-                    disabled={gradePage === 0}
-                    onClick={() => setGradePage((prev) => prev - 1)}
-                    className={STYLES.pageBtn}
-                  >
-                    上一頁
-                  </button>
-                  <span className="text-[10px] font-mono tracking-widest uppercase">
-                    {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_STUDENT_GRADES))}
-                  </span>
-                  <button
-                    disabled={(gradePage + 1) * PER_PAGE_STUDENT_GRADES >= totalGrades}
-                    onClick={() => setGradePage((prev) => prev + 1)}
-                    className={STYLES.pageBtn}
-                  >
-                    下一頁
-                  </button>
+                  <button disabled={gradePage === 0} onClick={() => setGradePage((p) => p - 1)} className={STYLES.pageBtn}>上一頁</button>
+                  <span className="text-[10px] font-mono tracking-widest uppercase">{gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_STUDENT_GRADES))}</span>
+                  <button disabled={(gradePage + 1) * PER_PAGE_STUDENT_GRADES >= totalGrades} onClick={() => setGradePage((p) => p + 1)} className={STYLES.pageBtn}>下一頁</button>
                 </div>
               )}
             </section>
           )}
 
+          {/* GPA + 出勤 */}
           {isStudent && (
             <>
               <section className={STYLES.bentoItem}>
-                <div className={STYLES.itemHeader}>
-                  <div className={STYLES.iconBox}>
-                    <BookOpen size={20} aria-hidden="true" />
-                  </div>
-                  <span className={STYLES.cardLabel}>平均積分 (GPA)</span>
-                </div>
-                <div>
-                  <div className="text-5xl font-black text-[var(--brand-primary)] mb-2">{averageScore}</div>
-                  <p className="text-xs font-light tracking-widest uppercase text-[var(--text-sub)]">
-                    全部記錄平均分數
-                  </p>
-                </div>
+                <div className={STYLES.itemHeader}><div className={STYLES.iconBox}><BookOpen size={20} aria-hidden="true" /></div><span className={STYLES.cardLabel}>平均積分 (GPA)</span></div>
+                <div><div className="text-5xl font-black text-[var(--brand-primary)] mb-2">{averageScore}</div><p className="text-xs font-light tracking-widest uppercase text-[var(--text-sub)]">全部記錄平均分數</p></div>
               </section>
-
               <section className={STYLES.bentoItem}>
-                <div className={STYLES.itemHeader}>
-                  <div className={STYLES.iconBox}>
-                    <Clock size={20} aria-hidden="true" />
-                  </div>
-                  <span className={STYLES.cardLabel}>今日出勤</span>
-                </div>
-                <div>
-                  <div className="text-3xl font-black text-[var(--brand-primary)] mb-2">
-                    {hasCheckedInToday ? '已打卡' : '尚未打卡'}
-                  </div>
-                  <p className="text-xs font-light tracking-widest uppercase text-[var(--text-sub)]">
-                    累計出勤天數：{attendanceCount}
-                  </p>
-                </div>
+                <div className={STYLES.itemHeader}><div className={STYLES.iconBox}><Clock size={20} aria-hidden="true" /></div><span className={STYLES.cardLabel}>今日出勤</span></div>
+                <div><div className="text-3xl font-black text-[var(--brand-primary)] mb-2">{hasCheckedInToday ? '已打卡' : '尚未打卡'}</div><p className="text-xs font-light tracking-widest uppercase text-[var(--text-sub)]">累計出勤天數：{attendanceCount}</p></div>
               </section>
             </>
           )}
         </main>
 
+        {/* 學生打卡橫幅 */}
         {isStudent && (
-          <div className={STYLES.studentCheckInWrapper}>
-            <div className={STYLES.studentCheckInCard}>
+          <div className={STYLES.checkInWrapper}>
+            <div className={STYLES.checkInCard}>
               <div className={STYLES.checkInInfo}>
                 <div className={STYLES.checkInBox}>
-                  <div className={STYLES.checkInIcon}>
-                    <Clock size={32} aria-hidden="true" />
-                  </div>
+                  <div className={STYLES.checkInIcon}><Clock size={32} aria-hidden="true" /></div>
                   <div>
-                    <span className="block mb-1 text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">
-                      連續打卡
-                    </span>
-                    <div className={STYLES.checkInCount}>
-                      <span className="text-4xl font-black text-black">{attendanceCount}</span>
-                      <span className="text-xs font-bold uppercase text-black/60">天</span>
-                    </div>
+                    <span className="block mb-1 text-[10px] font-black tracking-[0.2em] text-black/40 uppercase">連續打卡</span>
+                    <div className={STYLES.checkInCount}><span className="text-4xl font-black text-black">{attendanceCount}</span><span className="text-xs font-bold uppercase text-black/60">天</span></div>
                   </div>
                 </div>
-
-                <div className={STYLES.weeklyProgress} aria-hidden="true">
-                  {Array.from({ length: 7 }, (_, index) => (
-                    <div
-                      key={index}
-                      className={`${STYLES.dot} ${index < weeklyProgress ? STYLES.dotActive : 'bg-transparent'}`}
-                    />
-                  ))}
+                <div className={STYLES.weeklyDots} aria-hidden="true">
+                  {Array.from({ length: 7 }, (_, i) => <div key={i} className={`${STYLES.dot} ${i < weeklyProgress ? STYLES.dotActive : 'bg-transparent'}`} />)}
                 </div>
               </div>
-
-              <div className="flex flex-col items-end">
-                <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/20">
-                  持續努力，穩定進步
-                </p>
-              </div>
+              <p className="text-[10px] font-black tracking-[0.2em] uppercase text-black/20">持續努力，穩定進步</p>
             </div>
           </div>
         )}
 
+        {/* 成績管理表格 */}
         {canManageGrades && (
           <section className="mt-8 mb-8 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm theme-transition md:mt-10 md:mb-12">
             <div className="flex flex-col gap-4 p-8 border-b border-[var(--ui-border)] md:flex-row md:items-center md:justify-between md:p-10">
               <div className={`${STYLES.itemHeader} mb-0`}>
-                <div className={STYLES.iconBox}>
-                  <Award size={20} aria-hidden="true" />
-                </div>
-                <div>
-                  <span className={STYLES.cardLabel}>成績管理</span>
-                  <p className="mt-1 text-[10px] text-[var(--text-sub)]">
-                    共 {totalGrades} 筆，頁次 {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}
-                  </p>
-                </div>
+                <div className={STYLES.iconBox}><Award size={20} aria-hidden="true" /></div>
+                <div><span className={STYLES.cardLabel}>成績管理</span><p className="mt-1 text-[10px] text-[var(--text-sub)]">共 {totalGrades} 筆，頁次 {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}</p></div>
               </div>
-
-              <button onClick={() => setIsGradeCreateOpen(true)} className={STYLES.addBtn}>
-                <Plus size={12} aria-hidden="true" /> 新增成績
-              </button>
+              <button onClick={() => setIsGradeCreateOpen(true)} className={STYLES.addBtn}><Plus size={12} aria-hidden="true" /> 新增成績</button>
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full border-collapse min-w-[1020px]">
                 <thead>
                   <tr className="bg-[var(--ui-bg)] border-b border-[var(--ui-border)]">
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">姓名</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">學號</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">班級</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">科目</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">學期</th>
-                    <th className="px-6 py-4 text-right text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">分數</th>
-                    <th className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">測驗日期</th>
-                    <th className="px-6 py-4 text-right text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">操作</th>
+                    {['姓名','學號','班級','科目','學期','分數','測驗日期','操作'].map((h) => (
+                      <th key={h} className="px-6 py-4 text-left text-[9px] font-black tracking-[0.2em] text-[var(--text-sub)] uppercase whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ui-border)]">
-                  {grades.length > 0 ? (
-                    grades.map((grade) => (
-                      <motion.tr
-                        key={grade.id}
-                        className="hover:bg-[var(--ui-bg)]/50 transition-colors"
-                        initial={lastUpdatedGradeId === grade.id ? { backgroundColor: 'rgba(0,0,0,0.07)' } : false}
-                        animate={{ backgroundColor: 'transparent' }}
-                        transition={{ duration: 1.6 }}
-                      >
-                        <td className="px-6 py-5 text-sm font-bold text-[var(--text-main)] whitespace-nowrap">
-                          {grade.profile?.full_name ?? '--'}
-                        </td>
-                        <td className="px-6 py-5 text-sm font-mono text-[var(--text-sub)] whitespace-nowrap">
-                          {grade.profile?.student_no ?? grade.student_id.slice(0, 8)}
-                        </td>
-                        <td className="px-6 py-5 text-sm text-[var(--text-sub)] whitespace-nowrap">
-                          {grade.profile?.class_name ?? '--'}
-                        </td>
-                        <td className="px-6 py-5 text-sm text-[var(--text-main)] whitespace-nowrap">{grade.subject}</td>
-                        <td className="px-6 py-5 text-sm text-[var(--text-sub)] whitespace-nowrap">{grade.term}</td>
-                        <td className="px-6 py-5 text-right whitespace-nowrap">{renderScore(Number(grade.score || 0))}</td>
-                        <td className="px-6 py-5 text-sm text-[var(--text-sub)] whitespace-nowrap">{formatDate(grade.exam_date)}</td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => openEditGrade(grade)}
-                              className="px-2 py-1 border border-black text-[9px] font-bold tracking-widest uppercase hover:bg-black hover:text-white transition"
-                            >
-                              <Edit3 size={12} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteGrade(grade.id)}
-                              className="px-2 py-1 border border-red-500 text-red-500 text-[9px] font-bold tracking-widest uppercase hover:bg-red-500 hover:text-white transition"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={8} className={STYLES.emptyText}>目前沒有成績資料。</td>
-                    </tr>
-                  )}
+                  {grades.length > 0 ? grades.map((g) => (
+                    <motion.tr key={g.id} className="transition-colors hover:bg-[var(--ui-bg)]/50"
+                      initial={lastUpdatedGradeId === g.id ? { backgroundColor: 'rgba(0,0,0,0.07)' } : false}
+                      animate={{ backgroundColor: 'transparent' }} transition={{ duration: 1.6 }}
+                    >
+                      <td className="px-6 py-5 text-sm font-bold text-[var(--text-main)] whitespace-nowrap">{g.profile?.full_name ?? '--'}</td>
+                      <td className="px-6 py-5 text-sm font-mono text-[var(--text-sub)] whitespace-nowrap">{g.profile?.student_no ?? g.student_id.slice(0, 8)}</td>
+                      <td className="px-6 py-5 text-sm text-[var(--text-sub)] whitespace-nowrap">{g.profile?.class_name ?? '--'}</td>
+                      <td className="px-6 py-5 text-sm text-[var(--text-main)] whitespace-nowrap">{g.subject}</td>
+                      <td className="px-6 py-5 text-sm text-[var(--text-sub)] whitespace-nowrap">{g.term}</td>
+                      <td className="px-6 py-5 text-right whitespace-nowrap">{renderScore(Number(g.score || 0))}</td>
+                      <td className="px-6 py-5 text-sm text-[var(--text-sub)] whitespace-nowrap">{formatDate(g.exam_date)}</td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* [P1 FIX] 刪除按鈕邊框/字色使用 var(--score-fail) Token */}
+                          <button onClick={() => setEditingGrade({ ...g })} aria-label={`編輯 ${g.subject} 成績`} className="px-2 py-1 border border-black text-[9px] font-bold tracking-widest uppercase transition hover:bg-black hover:text-white"><Edit3 size={12} /></button>
+                          <button onClick={() => handleDeleteGrade(g.id)} aria-label={`刪除 ${g.subject} 成績`} className="px-2 py-1 border border-[var(--score-fail)] text-[var(--score-fail)] text-[9px] font-bold tracking-widest uppercase transition hover:bg-[var(--score-fail)] hover:text-white"><Trash2 size={12} /></button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  )) : <tr><td colSpan={8} className={STYLES.emptyText}>目前沒有成績資料。</td></tr>}
                 </tbody>
               </table>
             </div>
-
-            <div className="flex justify-center items-center gap-4 px-6 py-6 border-t border-[var(--ui-border)]">
-              <button
-                disabled={gradePage === 0}
-                onClick={() => setGradePage((prev) => prev - 1)}
-                className={STYLES.pageBtn}
-              >
-                上一頁
-              </button>
-              <span className="text-[10px] font-mono tracking-widest uppercase">
-                {gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}
-              </span>
-              <button
-                disabled={(gradePage + 1) * PER_PAGE_MANAGE_GRADES >= totalGrades}
-                onClick={() => setGradePage((prev) => prev + 1)}
-                className={STYLES.pageBtn}
-              >
-                下一頁
-              </button>
+            <div className="flex items-center justify-center gap-4 px-6 py-6 border-t border-[var(--ui-border)]">
+              <button disabled={gradePage === 0} onClick={() => setGradePage((p) => p - 1)} className={STYLES.pageBtn}>上一頁</button>
+              <span className="text-[10px] font-mono tracking-widest uppercase">{gradePage + 1} / {Math.max(1, Math.ceil(totalGrades / PER_PAGE_MANAGE_GRADES))}</span>
+              <button disabled={(gradePage + 1) * PER_PAGE_MANAGE_GRADES >= totalGrades} onClick={() => setGradePage((p) => p + 1)} className={STYLES.pageBtn}>下一頁</button>
             </div>
           </section>
         )}
       </div>
 
+      {/* ── Modals ──────────────────────────────────────────── */}
       {canManageGrades && isGradeCreateOpen && (
         <div className={STYLES.modalOverlay} onClick={() => setIsGradeCreateOpen(false)}>
-          <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
+          <div className={STYLES.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
               <span className="text-xl font-black tracking-widest text-black">新增成績</span>
-              <button onClick={() => setIsGradeCreateOpen(false)} className="p-2 hover:rotate-90 transition-transform duration-500">
-                <X size={20} aria-hidden="true" />
-              </button>
+              <button onClick={() => setIsGradeCreateOpen(false)} aria-label="關閉" className="p-2 transition-transform duration-500 hover:rotate-90"><X size={20} /></button>
             </div>
-
             <form onSubmit={handleAddGrade}>
               {[
                 { id: 'g-uid', label: '學生 UUID *', name: 'target_student_id', type: 'text', ph: 'profiles.id' },
@@ -1129,27 +671,13 @@ export const Dashboard: React.FC = () => {
                 { id: 'g-term', label: '學期 *', name: 'term', type: 'text', ph: '113-2' },
                 { id: 'g-score', label: '分數 (0-100) *', name: 'score', type: 'number', ph: '85' },
                 { id: 'g-date', label: '測驗日期', name: 'exam_date', type: 'date', ph: '' },
-              ].map((field) => (
-                <div key={field.id}>
-                  <label className={STYLES.formLabel} htmlFor={field.id}>{field.label}</label>
-                  <input
-                    id={field.id}
-                    type={field.type}
-                    placeholder={field.ph}
-                    required={field.label.includes('*')}
-                    min={field.type === 'number' ? '0' : undefined}
-                    max={field.type === 'number' ? '100' : undefined}
-                    className={STYLES.input}
-                    value={(newGrade as any)[field.name]}
-                    onChange={(event) => setNewGrade((prev) => ({ ...prev, [field.name]: event.target.value }))}
-                  />
+              ].map((f) => (
+                <div key={f.id}>
+                  <label className={STYLES.formLabel} htmlFor={f.id}>{f.label}</label>
+                  <input id={f.id} type={f.type} placeholder={f.ph} required={f.label.includes('*')} min={f.type === 'number' ? '0' : undefined} max={f.type === 'number' ? '100' : undefined} className={STYLES.input} value={(newGrade as any)[f.name]} onChange={(e) => setNewGrade((prev) => ({ ...prev, [f.name]: e.target.value }))} />
                 </div>
               ))}
-
-              <button type="submit" disabled={isGradeSubmitting} className={STYLES.submitBtn}>
-                <Send size={14} aria-hidden="true" />
-                {isGradeSubmitting ? '送出中...' : '確認資料'}
-              </button>
+              <button type="submit" disabled={isGradeSubmitting} className={STYLES.submitBtn}><Send size={14} aria-hidden="true" />{isGradeSubmitting ? '送出中...' : '確認資料'}</button>
             </form>
           </div>
         </div>
@@ -1157,61 +685,25 @@ export const Dashboard: React.FC = () => {
 
       {editingGrade && (
         <div className={STYLES.modalOverlay} onClick={() => setEditingGrade(null)}>
-          <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
+          <div className={STYLES.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
               <span className="text-xl font-black tracking-widest text-black">編輯成績</span>
-              <button onClick={() => setEditingGrade(null)} className="p-2 hover:rotate-90 transition-transform duration-500">
-                <X size={20} aria-hidden="true" />
-              </button>
+              <button onClick={() => setEditingGrade(null)} aria-label="關閉" className="p-2 transition-transform duration-500 hover:rotate-90"><X size={20} /></button>
             </div>
-
             <form onSubmit={handleUpdateGrade}>
-              <label className={STYLES.formLabel} htmlFor="edit-subject">科目 *</label>
-              <input
-                id="edit-subject"
-                type="text"
-                required
-                className={STYLES.input}
-                value={editingGrade.subject}
-                onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, subject: event.target.value } : prev))}
-              />
-
-              <label className={STYLES.formLabel} htmlFor="edit-term">學期 *</label>
-              <input
-                id="edit-term"
-                type="text"
-                required
-                className={STYLES.input}
-                value={editingGrade.term}
-                onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, term: event.target.value } : prev))}
-              />
-
-              <label className={STYLES.formLabel} htmlFor="edit-score">分數 (0-100) *</label>
-              <input
-                id="edit-score"
-                type="number"
-                min="0"
-                max="100"
-                required
-                className={STYLES.input}
-                value={editingGrade.score}
-                onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, score: Number(event.target.value) } : prev))}
-              />
-
-              <label className={STYLES.formLabel} htmlFor="edit-exam-date">測驗日期</label>
-              <input
-                id="edit-exam-date"
-                type="date"
-                className={STYLES.input}
-                value={editingGrade.exam_date ?? ''}
-                onChange={(event) => setEditingGrade((prev) => (prev ? { ...prev, exam_date: event.target.value } : prev))}
-              />
-
-              <button type="submit" disabled={isGradeSubmitting} className={STYLES.submitBtn}>
-                <Send size={14} aria-hidden="true" />
-                {isGradeSubmitting ? '儲存中...' : '儲存修改'}
-              </button>
+              {[
+                { id: 'e-subject', label: '科目 *', key: 'subject', type: 'text' },
+                { id: 'e-term', label: '學期 *', key: 'term', type: 'text' },
+                { id: 'e-score', label: '分數 (0-100) *', key: 'score', type: 'number' },
+                { id: 'e-date', label: '測驗日期', key: 'exam_date', type: 'date' },
+              ].map((f) => (
+                <div key={f.id}>
+                  <label className={STYLES.formLabel} htmlFor={f.id}>{f.label}</label>
+                  <input id={f.id} type={f.type} required={f.label.includes('*')} min={f.type === 'number' ? '0' : undefined} max={f.type === 'number' ? '100' : undefined} className={STYLES.input} value={(editingGrade as any)[f.key] ?? ''} onChange={(e) => setEditingGrade((prev) => prev ? { ...prev, [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value } : prev)} />
+                </div>
+              ))}
+              <button type="submit" disabled={isGradeSubmitting} className={STYLES.submitBtn}><Send size={14} aria-hidden="true" />{isGradeSubmitting ? '儲存中...' : '儲存修改'}</button>
             </form>
           </div>
         </div>
@@ -1219,34 +711,19 @@ export const Dashboard: React.FC = () => {
 
       {viewingAnnounce && (
         <div className={STYLES.modalOverlay} onClick={() => setViewingAnnounce(null)}>
-          <div className={`${STYLES.modalContent} max-w-2xl`} onClick={(event) => event.stopPropagation()}>
+          <div className={`${STYLES.modalContent} max-w-2xl`} onClick={(e) => e.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-start mb-10">
-              <div>
-                <span className={STYLES.cardLabel}>{formatDate(viewingAnnounce.created_at)}</span>
-                <h2 className="mt-2 text-2xl font-black uppercase tracking-tight">{viewingAnnounce.title}</h2>
-              </div>
-              <button onClick={() => setViewingAnnounce(null)} className="p-2 hover:rotate-90 transition-transform duration-500">
-                <X size={24} aria-hidden="true" />
-              </button>
+              <div><span className={STYLES.cardLabel}>{formatDate(viewingAnnounce.created_at)}</span><h2 className="mt-2 text-2xl font-black uppercase tracking-tight">{viewingAnnounce.title}</h2></div>
+              <button onClick={() => setViewingAnnounce(null)} aria-label="關閉公告" className="p-2 transition-transform duration-500 hover:rotate-90"><X size={24} /></button>
             </div>
-
             <div className="flex-1 max-h-[50vh] overflow-y-auto pr-2">
-              <p className="whitespace-pre-wrap text-base leading-relaxed font-light text-neutral-600">{viewingAnnounce.content}</p>
+              <p className="whitespace-pre-wrap text-base font-light leading-relaxed text-neutral-600">{viewingAnnounce.content}</p>
             </div>
-
-            <div className="flex justify-between items-center mt-12 pt-8 border-t border-black/5">
-              {isAdmin && (
-                <button
-                  onClick={() => handleDeleteAnnouncement(viewingAnnounce.id)}
-                  className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  刪除
-                </button>
-              )}
-              <button onClick={() => setViewingAnnounce(null)} className="ml-auto px-8 py-3 bg-black text-white text-[10px] font-black tracking-widest uppercase">
-                取消
-              </button>
+            <div className="flex items-center justify-between mt-12 pt-8 border-t border-black/5">
+              {/* [P1 FIX] 刪除字色 → var(--score-fail) */}
+              {isAdmin && <button onClick={() => handleDeleteAnnouncement(viewingAnnounce.id)} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--score-fail)] transition-colors hover:bg-[var(--score-fail-bg)]">刪除</button>}
+              <button onClick={() => setViewingAnnounce(null)} className="ml-auto px-8 py-3 bg-black text-white text-[10px] font-black tracking-widest uppercase">取消</button>
             </div>
           </div>
         </div>
@@ -1254,50 +731,22 @@ export const Dashboard: React.FC = () => {
 
       {isAdmin && isAnnounceCreateOpen && (
         <div className={STYLES.modalOverlay} onClick={() => setIsAnnounceCreateOpen(false)}>
-          <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
+          <div className={STYLES.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
               <span className="text-xl font-black tracking-widest text-black">發佈公告</span>
-              <button onClick={() => setIsAnnounceCreateOpen(false)} className="p-2 hover:rotate-90 transition-transform duration-500">
-                <X size={20} aria-hidden="true" />
-              </button>
+              <button onClick={() => setIsAnnounceCreateOpen(false)} aria-label="關閉" className="p-2 transition-transform duration-500 hover:rotate-90"><X size={20} /></button>
             </div>
-
             <form onSubmit={handleAddAnnouncement}>
               <label className={STYLES.formLabel} htmlFor="a-title">公告標題 *</label>
-              <input
-                id="a-title"
-                type="text"
-                required
-                className={STYLES.input}
-                value={newAnnounce.title}
-                onChange={(event) => setNewAnnounce((prev) => ({ ...prev, title: event.target.value }))}
-              />
-
+              <input id="a-title" type="text" required className={STYLES.input} value={newAnnounce.title} onChange={(e) => setNewAnnounce((p) => ({ ...p, title: e.target.value }))} />
               <label className={STYLES.formLabel} htmlFor="a-content">公告內容 *</label>
-              <textarea
-                id="a-content"
-                required
-                rows={5}
-                className={`${STYLES.input} min-h-[120px] resize-none`}
-                value={newAnnounce.content}
-                onChange={(event) => setNewAnnounce((prev) => ({ ...prev, content: event.target.value }))}
-              />
-
+              <textarea id="a-content" required rows={5} className={`${STYLES.input} min-h-[120px] resize-none`} value={newAnnounce.content} onChange={(e) => setNewAnnounce((p) => ({ ...p, content: e.target.value }))} />
               <div className="flex items-center gap-3 mb-8">
-                <input
-                  id="a-priority"
-                  type="checkbox"
-                  className="w-4 h-4 accent-black"
-                  checked={newAnnounce.priority}
-                  onChange={(event) => setNewAnnounce((prev) => ({ ...prev, priority: event.target.checked }))}
-                />
-                <label htmlFor="a-priority" className="text-[10px] font-bold tracking-widest uppercase cursor-pointer">置頂公告</label>
+                <input id="a-priority" type="checkbox" className="w-4 h-4 accent-black" checked={newAnnounce.priority} onChange={(e) => setNewAnnounce((p) => ({ ...p, priority: e.target.checked }))} />
+                <label htmlFor="a-priority" className="cursor-pointer text-[10px] font-bold tracking-widest uppercase">置頂公告</label>
               </div>
-
-              <button type="submit" className={STYLES.submitBtn}>
-                <Send size={14} aria-hidden="true" /> 確認發佈
-              </button>
+              <button type="submit" className={STYLES.submitBtn}><Send size={14} aria-hidden="true" /> 確認發佈</button>
             </form>
           </div>
         </div>
@@ -1305,61 +754,23 @@ export const Dashboard: React.FC = () => {
 
       {isAdmin && isInviteOpen && (
         <div className={STYLES.modalOverlay} onClick={() => setIsInviteOpen(false)}>
-          <div className={STYLES.modalContent} onClick={(event) => event.stopPropagation()}>
+          <div className={STYLES.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={STYLES.modalLine} />
             <div className="flex justify-between items-center mb-10">
               <span className="text-xl font-black tracking-widest text-black">邀請學生</span>
-              <button onClick={() => setIsInviteOpen(false)} className="p-2 hover:rotate-90 transition-transform duration-500">
-                <X size={20} aria-hidden="true" />
-              </button>
+              <button onClick={() => setIsInviteOpen(false)} aria-label="關閉" className="p-2 transition-transform duration-500 hover:rotate-90"><X size={20} /></button>
             </div>
-
             {inviteSuccess && <div className={STYLES.successBox}>{inviteSuccess}</div>}
             {inviteError && <div className={STYLES.errorBox}>{inviteError}</div>}
-
             <form onSubmit={handleInviteStudent}>
               <label className={STYLES.formLabel} htmlFor="i-email">學生 Email *</label>
-              <input
-                id="i-email"
-                type="email"
-                required
-                className={STYLES.input}
-                value={newInvite.email}
-                onChange={(event) => setNewInvite((prev) => ({ ...prev, email: event.target.value }))}
-              />
-
+              <input id="i-email" type="email" required className={STYLES.input} value={newInvite.email} onChange={(e) => setNewInvite((p) => ({ ...p, email: e.target.value }))} />
               <label className={STYLES.formLabel} htmlFor="i-name">學生姓名</label>
-              <input
-                id="i-name"
-                type="text"
-                className={STYLES.input}
-                value={newInvite.full_name}
-                onChange={(event) => setNewInvite((prev) => ({ ...prev, full_name: event.target.value }))}
-              />
-
+              <input id="i-name" type="text" className={STYLES.input} value={newInvite.full_name} onChange={(e) => setNewInvite((p) => ({ ...p, full_name: e.target.value }))} />
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={STYLES.formLabel} htmlFor="i-class">班級</label>
-                  <input
-                    id="i-class"
-                    type="text"
-                    className={STYLES.input}
-                    value={newInvite.class_name}
-                    onChange={(event) => setNewInvite((prev) => ({ ...prev, class_name: event.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className={STYLES.formLabel} htmlFor="i-no">學號</label>
-                  <input
-                    id="i-no"
-                    type="text"
-                    className={STYLES.input}
-                    value={newInvite.student_no}
-                    onChange={(event) => setNewInvite((prev) => ({ ...prev, student_no: event.target.value }))}
-                  />
-                </div>
+                <div><label className={STYLES.formLabel} htmlFor="i-class">班級</label><input id="i-class" type="text" className={STYLES.input} value={newInvite.class_name} onChange={(e) => setNewInvite((p) => ({ ...p, class_name: e.target.value }))} /></div>
+                <div><label className={STYLES.formLabel} htmlFor="i-no">學號</label><input id="i-no" type="text" className={STYLES.input} value={newInvite.student_no} onChange={(e) => setNewInvite((p) => ({ ...p, student_no: e.target.value }))} /></div>
               </div>
-
               <button type="submit" disabled={isInviting} className={STYLES.submitBtn}>
                 {isInviting ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
                 {isInviting ? '發送中...' : '發送邀請信'}
@@ -1369,17 +780,12 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Toast */}
       <AnimatePresence>
         {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed bottom-10 left-1/2 z-[500] -translate-x-1/2"
-          >
-            <div className={`px-8 py-4 border border-black shadow-2xl flex items-center gap-4 ${
-              toast.type === 'success' ? 'bg-black text-white' : 'bg-red-500 text-white'
-            }`}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed bottom-10 left-1/2 z-[500] -translate-x-1/2">
+            {/* [P1 FIX] error bg → var(--score-fail) */}
+            <div className={`flex items-center gap-4 px-8 py-4 border border-black shadow-2xl ${toast.type === 'success' ? 'bg-black text-white' : 'bg-[var(--score-fail)] text-white'}`}>
               {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
               <span className="text-[10px] font-bold tracking-[0.2em] uppercase">{toast.message}</span>
             </div>

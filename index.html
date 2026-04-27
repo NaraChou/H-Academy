@@ -1,13 +1,83 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>hsinyu-cram-school</title>
+
+    <!-- ── 基礎 SEO ───────────────────────────────────────────── -->
+    <title>欣育文理補習班 | 在 AI 時代給孩子最溫暖的成長導航</title>
+    <meta name="description" content="欣育文理補習班提供國小、國中、高中全齡課程，結合 AI 智能診斷與頂尖師資，陪伴孩子在 AI 時代穩健成長。台北信義、新北板橋均設有校區。" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="欣育文理補習班" />
+    <link rel="canonical" href="https://hsinyu.edu.tw/" />
+
+    <!-- ── Open Graph ─────────────────────────────────────────── -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:site_name"   content="欣育文理補習班" />
+    <meta property="og:title"       content="欣育文理補習班 | 在 AI 時代給孩子最溫暖的成長導航" />
+    <meta property="og:description" content="欣育文理補習班提供國小、國中、高中全齡課程，結合 AI 智能診斷與頂尖師資，陪伴孩子在 AI 時代穩健成長。" />
+    <meta property="og:url"         content="https://hsinyu.edu.tw/" />
+    <meta property="og:image"       content="https://hsinyu.edu.tw/og-image.png" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"   content="欣育文理補習班 — 全齡課程體系" />
+    <meta property="og:locale"      content="zh_TW" />
+
+    <!-- ── Twitter Card ──────────────────────────────────────── -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="欣育文理補習班 | 在 AI 時代給孩子最溫暖的成長導航" />
+    <meta name="twitter:description" content="欣育文理補習班提供國小、國中、高中全齡課程，結合 AI 智能診斷與頂尖師資，陪伴孩子在 AI 時代穩健成長。" />
+    <meta name="twitter:image"       content="https://hsinyu.edu.tw/og-image.png" />
+    <meta name="twitter:image:alt"   content="欣育文理補習班 — 全齡課程體系" />
+
+    <!-- ── Favicon ────────────────────────────────────────────── -->
+    <link rel="icon"             type="image/x-icon"    href="/favicon.ico" />
+    <link rel="icon"             type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon"             type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180"        href="/apple-touch-icon.png" />
+    <link rel="manifest"                                href="/site.webmanifest" />
+
+    <!-- ── LCP 首屏資源預載 ──────────────────────────────────── -->
+    <!-- 首屏主視覺（Hero 背景或 Logo）建議預載，減少 LCP 時間 -->
+    <!-- 若有首屏圖片請取消下方注解並填入正確路徑 -->
+    <!-- <link rel="preload" as="image" href="/og-image.png" fetchpriority="high" /> -->
+
+    <!-- ── 結構化資料 (JSON-LD) ───────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "欣育文理補習班",
+      "alternateName": "HsinYu Cram School",
+      "url": "https://hsinyu.edu.tw",
+      "logo": "https://hsinyu.edu.tw/favicon-32x32.png",
+      "description": "欣育文理補習班提供國小、國中、高中全齡課程，結合 AI 智能診斷與頂尖師資。",
+      "address": [
+        {
+          "@type": "PostalAddress",
+          "streetAddress": "忠孝東路五段 100 號",
+          "addressLocality": "信義區",
+          "addressRegion": "台北市",
+          "addressCountry": "TW"
+        },
+        {
+          "@type": "PostalAddress",
+          "streetAddress": "文化路一段 200 號",
+          "addressLocality": "板橋區",
+          "addressRegion": "新北市",
+          "addressCountry": "TW"
+        }
+      ],
+      "telephone": ["+886-2-2345-6789", "+886-2-8901-2345"],
+      "sameAs": [
+        "https://www.facebook.com/hsinyu",
+        "https://www.instagram.com/hsinyu"
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

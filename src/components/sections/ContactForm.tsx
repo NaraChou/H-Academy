@@ -25,7 +25,7 @@ const FORM_FIELDS = [
 
 // [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
-  wrapper:       'flex flex-col w-full px-6 py-24 bg-[var(--ui-bg)] theme-transition md:flex-row md:justify-between md:py-32',
+  wrapper:       'flex flex-col w-full px-6 py-24 bg-[var(--ui-bg)] theme-transition md:flex-row md:justify-between md:py-32 scroll-mt-24',
   container:     `${LAYOUT.container} flex flex-col gap-16 md:flex-row md:items-start`,
   
   // Left Column

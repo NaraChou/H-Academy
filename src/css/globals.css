@@ -1,29 +1,74 @@
 @layer base {
   :root {
-    --theme-black: #000000;
-    --theme-white: #FFFFFF;
+    /* ── Brand & Text ─────────────────────────────────────── */
+    --theme-black:   #000000;
+    --theme-white:   #FFFFFF;
     --brand-primary: var(--theme-black);
-    --brand-accent: #3B82F6;
-    --hsinyu-blue: #1A4B8F;
-    --text-main: var(--theme-black);
-    --text-sub: #64748B;
-    --ui-border: #E2E8F0;
-    --ui-bg: #F8FAFC;
-    --ui-white: var(--theme-white);
-    --font-sans: 'PingFang TC', 'Microsoft JhengHei', 'Helvetica Neue', Arial, sans-serif;
+    --brand-accent:  #3B82F6;
+    --hsinyu-blue:   #1A4B8F;
+    --text-main:     var(--theme-black);
+    --text-sub:      #64748B;
+    --ui-border:     #E2E8F0;
+    --ui-bg:         #F8FAFC;
+    --ui-white:      var(--theme-white);
+    --font-sans:     'PingFang TC', 'Microsoft JhengHei', 'Helvetica Neue', Arial, sans-serif;
+
+    /* ── P1 成績分數語義 Token ────────────────────────────── */
+    /* 用途：Dashboard renderScore / 任何成績色階元件          */
+    --score-gold:         #D4AF37;               /* 滿分 100：金色榮耀    */
+    --score-fail:         #E11D48;               /* 不及格 <60：紅色警示  */
+    --score-fail-bg:      rgba(225, 29, 72, 0.08);
+    --score-fail-border:  rgba(225, 29, 72, 0.20);
+
+    /* ── P1 危險操作語義 Token ───────────────────────────── */
+    /* 用途：Login errorWrap / 任何錯誤提示區塊               */
+    --color-danger:        #EF4444;
+    --color-danger-bg:     rgba(239, 68, 68, 0.10);
+    --color-danger-border: rgba(239, 68, 68, 0.20);
+
+    /* ── P1 通知紅點 Token ───────────────────────────────── */
+    /* 用途：Navbar Bell badge / Dashboard unread dot         */
+    --color-badge: #E11D48;
+
+    /* ── P2 成功狀態語義 Token ───────────────────────────── */
+    /* 用途：StaffCheckIn successMsg / 任何成功提示元件       */
+    /* 消滅 emerald-600 / emerald-50 / emerald-200 硬編碼     */
+    --color-success:        #059669;             /* emerald-600 等價     */
+    --color-success-bg:     rgba(5, 150, 105, 0.08);
+    --color-success-border: rgba(5, 150, 105, 0.20);
   }
 
   html.dark {
-    --theme-black: #F9F9F9;
-    --theme-white: #0A0A0A;
+    /* ── Brand & Text (dark) ──────────────────────────────── */
+    --theme-black:   #F9F9F9;
+    --theme-white:   #0A0A0A;
     --brand-primary: var(--theme-black);
-    --brand-accent: #60A5FA;
-    --hsinyu-blue: #5C95FD; /* 提高亮度，在深色上具科技與指引感 */
-    --text-main: var(--theme-black);
-    --text-sub: #9CA3AF; /* P0 強制對比度達標 */
-    --ui-border: #27272A;
-    --ui-bg: #050505;
-    --ui-white: var(--theme-white);
+    --brand-accent:  #60A5FA;
+    --hsinyu-blue:   #5C95FD;     /* 深色下提高亮度，保持科技感與可讀性 */
+    --text-main:     var(--theme-black);
+    --text-sub:      #9CA3AF;     /* P0：對比度達標 WCAG AA             */
+    --ui-border:     #27272A;
+    --ui-bg:         #050505;
+    --ui-white:      var(--theme-white);
+
+    /* ── 成績 Token (dark)：調高亮度以符合深色對比標準 ───── */
+    --score-gold:         #F0C842;
+    --score-fail:         #F43F5E;
+    --score-fail-bg:      rgba(244, 63, 94, 0.12);
+    --score-fail-border:  rgba(244, 63, 94, 0.25);
+
+    /* ── 危險 Token (dark) ───────────────────────────────── */
+    --color-danger:        #F87171;
+    --color-danger-bg:     rgba(248, 113, 113, 0.12);
+    --color-danger-border: rgba(248, 113, 113, 0.25);
+
+    /* ── 通知紅點 (dark) ─────────────────────────────────── */
+    --color-badge: #F43F5E;
+
+    /* ── 成功 Token (dark) ───────────────────────────────── */
+    --color-success:        #34D399;             /* emerald-400：深色可讀 */
+    --color-success-bg:     rgba(52, 211, 153, 0.12);
+    --color-success-border: rgba(52, 211, 153, 0.25);
   }
 
   body {

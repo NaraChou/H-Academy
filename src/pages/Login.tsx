@@ -7,34 +7,42 @@ import { supabase } from '../lib/supabase';
  * 頁面：Login 登入頁面
  * 設計：Kiki Design Style — 極簡約、大面積留白、明確元件邊界、平滑過渡。
  * 結構：垂直置中表單，帶有纖細邊框與微柔和陰影。
+ *
+ * P1 修正 (2026-04-25)：
+ * - errorWrap 硬編碼 #EF4444 系列 → var(--color-danger-*)
+ * - STYLES 全面重排：Layout → Visual → State → Responsive
  */
 
 // [B] 樣式常數（強制排序：Layout → Visual → State → Responsive）
 const STYLES = {
-  wrapper: 'flex flex-col items-center justify-center min-h-[70vh] w-full px-6 py-20 theme-transition',
-  card: 'w-full max-w-md p-8 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm transition-all duration-500 theme-transition hover:shadow-md md:p-12',
-  title: 'mb-2 text-center text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition',
-  subtitle: 'mb-8 text-center text-sm font-light tracking-widest text-[var(--text-sub)]',
-  form: 'flex flex-col gap-6 w-full',
-  
+  wrapper:    'flex flex-col items-center justify-center min-h-[70vh] w-full px-6 py-20 theme-transition',
+  // [P1 FIX] transition- 歸入 State 區；hover: 緊接 transition-
+  card:       'w-full max-w-md p-8 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-2xl shadow-sm theme-transition transition-all duration-500 hover:shadow-md md:p-12',
+  title:      'mb-2 text-3xl font-extrabold tracking-tight text-[var(--brand-primary)] text-center theme-transition',
+  subtitle:   'mb-8 text-sm font-light tracking-widest text-[var(--text-sub)] text-center',
+  form:       'flex flex-col gap-6 w-full',
+
   // Input group
   inputGroup: 'flex flex-col gap-2',
-  label: 'text-xs font-bold tracking-widest text-[var(--text-main)] uppercase theme-transition',
-  input: 'w-full px-4 py-3 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-xl text-sm text-[var(--text-main)] transition-colors duration-300 focus:border-[var(--hsinyu-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--hsinyu-blue)]',
-  
+  label:      'text-xs font-bold tracking-widest text-[var(--text-main)] uppercase theme-transition',
+  // [P1 FIX] transition- / focus: 歸入 State 區
+  input:      'w-full px-4 py-3 bg-[var(--ui-white)] border border-[var(--ui-border)] rounded-xl text-sm text-[var(--text-main)] theme-transition transition-colors duration-300 focus:border-[var(--hsinyu-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--hsinyu-blue)]',
+
   // Button
-  button: 'flex w-full items-center justify-center py-4 mt-2 bg-[var(--brand-primary)] text-[var(--ui-white)] text-sm font-bold tracking-widest rounded-xl transition-all duration-300 hover:bg-[var(--hsinyu-blue)] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
-  
+  // [P1 FIX] transition- / hover: / active: / disabled: 統一歸入 State 區尾端
+  button:     'flex w-full items-center justify-center mt-2 py-4 bg-[var(--brand-primary)] rounded-xl text-[var(--ui-white)] text-sm font-bold tracking-widest transition-all duration-300 hover:bg-[var(--hsinyu-blue)] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
+
   // Error message
-  errorWrap: 'mb-6 px-4 py-3 text-center text-sm font-medium text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg',
+  // [P1 FIX] 硬編碼 #EF4444 系列 → var(--color-danger-*)
+  errorWrap:  'mb-6 px-4 py-3 bg-[var(--color-danger-bg)] border border-[var(--color-danger-border)] rounded-lg text-sm font-medium text-[var(--color-danger)] text-center',
 } as const;
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email,     setEmail]     = useState('');
+  const [password,  setPassword]  = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg,  setErrorMsg]  = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +50,6 @@ export const Login: React.FC = () => {
       setErrorMsg('Supabase 尚未設定，無法進行登入。');
       return;
     }
-
     if (!email || !password) {
       setErrorMsg('請填寫所有欄位。');
       return;
@@ -52,10 +59,7 @@ export const Login: React.FC = () => {
     setErrorMsg('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         if (error.message.includes('信箱未驗證')) {
@@ -66,9 +70,7 @@ export const Login: React.FC = () => {
         throw error;
       }
 
-      if (data.user) {
-        navigate('/dashboard');
-      }
+      if (data.user) navigate('/dashboard');
     } catch (err: any) {
       if (err.message.includes('無效的登入憑證')) {
         setErrorMsg('信箱或密碼錯誤，請重新檢查。');
@@ -121,8 +123,8 @@ export const Login: React.FC = () => {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={STYLES.button}
             disabled={isLoading}
             aria-busy={isLoading}

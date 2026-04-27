@@ -28,8 +28,9 @@ const STYLES = {
   glass: 'bg-[var(--ui-white)]/80 backdrop-blur-md border-b',
   scrolled: 'py-3 border-[var(--ui-border)] shadow-sm',
   default: 'py-6 border-transparent',
+  hidden: 'opacity-0 pointer-events-none',
   
-  logo: 'z-50 flex items-center gap-2 text-xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition lg:text-2xl',
+  logo: 'z-[110] flex items-center gap-2 text-xl font-extrabold tracking-tight text-[var(--brand-primary)] theme-transition lg:text-2xl',
   logoIcon: 'flex-shrink-0 text-[var(--brand-accent)] theme-transition',
   logoText: 'hidden sm:inline tracking-[0.2em]',
   
@@ -43,7 +44,7 @@ const STYLES = {
   dropdownContent: 'flex flex-col min-w-[160px] p-2 bg-[var(--ui-bg)]/90 backdrop-blur-md border border-[var(--ui-border)] rounded-sm shadow-xl theme-transition',
   dropdownLink: 'block px-4 py-3 text-sm text-[var(--text-main)] transition-colors theme-transition hover:bg-[var(--ui-border)] hover:text-[var(--hsinyu-blue)]',
   
-  actions: 'z-50 flex items-center gap-4',
+  actions: 'z-[110] flex items-center gap-4',
   iconBtn: 'relative p-2 text-[var(--text-main)] transition-colors theme-transition pointer-events-auto hover:text-[var(--brand-primary)]',
   badge: 'absolute top-1 right-2 w-2 h-2 bg-[var(--brand-accent)] border border-[var(--ui-bg)] rounded-full theme-transition',
   
@@ -57,8 +58,10 @@ const STYLES = {
   notifDate: 'text-xs text-neutral-400',
   popoverFooter: 'flex items-center justify-end mt-4 pt-4 border-t border-[var(--ui-border)] text-xs font-bold tracking-wider text-[var(--hsinyu-blue)] transition-transform duration-300 hover:translate-x-1',
   
-  mobileNavOverlay: 'fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 bg-[var(--ui-bg)]/95 backdrop-blur-lg transition-all duration-500 theme-transition',
-  mobileNavLink: 'text-2xl font-medium tracking-widest text-[var(--text-main)] transition-all theme-transition hover:text-[var(--hsinyu-blue)]',
+  mobileNavOverlay: 'fixed inset-0 z-[105] flex flex-col bg-[var(--ui-bg)] transition-all duration-500 theme-transition overflow-y-auto pt-32 pb-12 pointer-events-auto',
+  mobileNavLink: 'text-2xl font-black tracking-tighter text-[var(--text-main)] transition-all theme-transition hover:text-[var(--hsinyu-blue)] uppercase',
+  mobileSubLink: 'text-xs font-bold tracking-[0.2em] text-[var(--text-sub)] transition-all theme-transition hover:text-[var(--hsinyu-blue)] uppercase',
+  mobileCloseBar: 'w-full py-6 mt-8 border-t border-[var(--ui-border)] text-sm font-black tracking-[0.3em] text-[var(--text-sub)] text-center uppercase hover:text-[var(--brand-primary)]',
   
   userDropdown: 'invisible absolute top-full right-0 z-[110] pt-4 opacity-0 transition-all duration-300 theme-transition rounded-sm overflow-hidden group-hover/user:visible group-hover/user:opacity-100',
   userDropdownContent: 'w-60 overflow-hidden bg-[var(--ui-bg)] border border-[var(--ui-border)] shadow-xl',
@@ -68,8 +71,9 @@ const STYLES = {
   logoutOption: 'flex w-full items-center gap-3 px-4 py-3 text-left text-xs font-bold tracking-widest text-[#EF4444] transition-colors theme-transition hover:bg-[#EF4444]/10',
   
   mobileNotifOverlay: 'fixed inset-0 z-[200] flex flex-col bg-[var(--ui-bg)]/95 backdrop-blur-xl transition-transform duration-500 ease-in-out',
-  mobileMenuToggle: 'z-50 block p-2 text-[var(--text-main)] cursor-pointer lg:hidden',
-} as const;
+	  mobileMenuToggle: 'z-[110] block p-2 text-[var(--text-main)] cursor-pointer lg:hidden',
+	  mobileCloseBtn: 'z-[110] block p-2 text-[var(--text-main)] cursor-pointer lg:hidden',
+	} as const;
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -123,23 +127,53 @@ export const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  const handleNavClick = (href: string) => {
-    const [path, hash] = href.split('#');
-    if (location.pathname === path && location.hash.replace('#', '') === (hash || '')) {
-      if (hash) {
-        setMobileMenuOpen(false);
-        const el = document.getElementById(hash);
-        if (el) {
-          const topPos = el.getBoundingClientRect().top + window.scrollY - 80;
-          window.scrollTo({ top: topPos, behavior: 'smooth' });
-        }
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } else {
-       setMobileMenuOpen(false);
-    }
-  };
+			  const handleNavClick = (e: React.MouseEvent, href: string) => {
+			    const [path, hash] = href.split('#');
+			    const isCurrentPage = location.pathname === path || (path === '/' && location.pathname === '/') || (path === '' && location.pathname === '/');
+	
+				    // 1. 如果是在當前頁面點擊錨點
+				    if (hash && isCurrentPage) {
+				      // 針對手機版：解決 Hash 鎖定問題，確保每次點擊都能強制跳轉
+				      if (window.innerWidth < 1024) { // lg 斷點以下
+				        setMobileMenuOpen(false);
+				        
+				        // [P0] 強制重置機制：如果 Hash 已存在，先清除它以觸發瀏覽器重新偵測
+				        if (window.location.hash === `#${hash}`) {
+				          window.history.replaceState(null, '', window.location.pathname);
+				        }
+				        
+				        // 延遲賦值以確保瀏覽器感知到變更
+				        setTimeout(() => {
+				          window.location.hash = hash;
+				          // 雙重保險：手動觸發滾動以防 Hash 方案失效
+				          const el = document.getElementById(hash);
+				          if (el) el.scrollIntoView({ behavior: 'smooth' });
+				        }, 50);
+				      } else {
+			        // 網頁版保持原本精準的 JS 滾動
+			        e.preventDefault();
+			        const el = document.getElementById(hash);
+			        if (el) {
+			          const offset = 80;
+			          const bodyRect = document.body.getBoundingClientRect().top;
+			          const elementRect = el.getBoundingClientRect().top;
+			          const elementPosition = elementRect - bodyRect;
+			          const offsetPosition = elementPosition - offset;
+	
+			          window.scrollTo({
+			            top: offsetPosition,
+			            behavior: 'smooth'
+			          });
+			        }
+			      }
+			    } else {
+			      // 跨頁或一般連結，直接關閉選單
+			      setMobileMenuOpen(false);
+			    }
+			    
+			    // 統一關閉通知
+			    setMobileNotifOpen(false);
+			  };
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -149,13 +183,13 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className={`${STYLES.header} ${STYLES.glass} ${isScrolled ? STYLES.scrolled : STYLES.default}`}>
-        <Link to="/" className={STYLES.logo}>
+        <Link to="/" className={`${STYLES.logo} ${mobileMenuOpen ? STYLES.hidden : ''}`}>
           <Leaf className={STYLES.logoIcon} size={28} aria-hidden="true" />
           <span className={STYLES.logoText}>欣育</span>
         </Link>
         
         <div className={STYLES.rightSide}>
-          <nav className={STYLES.nav} aria-label="主要導覽列">
+          <nav className={`${STYLES.nav} ${mobileMenuOpen ? STYLES.hidden : ''}`} aria-label="主要導覽列">
             <ul className="flex items-center gap-4 xl:gap-8">
               {NAV_ITEMS.map((item, idx) => (
                 <li key={idx} className={item.children ? STYLES.navItemWrap : ''}>
@@ -181,7 +215,7 @@ export const Navbar: React.FC = () => {
         </nav>
           
           <div className={STYLES.actions}>
-             <div className="relative group/bell">
+             <div className={`relative group/bell ${mobileMenuOpen ? STYLES.hidden : ''}`}>
                <button 
                  className={STYLES.iconBtn} 
                  aria-label="訊息通知"
@@ -218,9 +252,9 @@ export const Navbar: React.FC = () => {
                </div>
              </div>
             
-            <ThemeSwitcher />
+            {!mobileMenuOpen && <ThemeSwitcher />}
 
-            <div className="relative group/user">
+            <div className={`relative group/user ${mobileMenuOpen ? STYLES.hidden : ''}`}>
               {user ? (
                 <>
                   <button className={STYLES.iconBtn} aria-label="會員選單">
@@ -249,14 +283,14 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            <button 
-              className={STYLES.mobileMenuToggle}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? "關閉選單" : "開啟選單"}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
-            </button>
+		            <button 
+		              className={mobileMenuOpen ? STYLES.mobileCloseBtn : STYLES.mobileMenuToggle}
+		              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+		              aria-label={mobileMenuOpen ? "關閉選單" : "開啟選單"}
+		              aria-expanded={mobileMenuOpen}
+		            >
+		              {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
+		            </button>
           </div>
         </div>
       </header>
@@ -269,11 +303,58 @@ export const Navbar: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
           >
-            {NAV_ITEMS.map((item, idx) => (
-              <Link key={idx} to={item.href} className={STYLES.mobileNavLink} onClick={() => handleNavClick(item.href)}>
-                {item.label}
-              </Link>
-            ))}
+            <nav className="flex flex-col items-center gap-12 px-8" aria-label="手機版導覽選單">
+              <ul className="flex flex-col items-center gap-10 w-full">
+                {NAV_ITEMS.map((item, idx) => (
+                  <li key={idx} className="flex flex-col items-center gap-6 w-full">
+                    <Link to={item.href} className={STYLES.mobileNavLink} onClick={(e) => handleNavClick(e, item.href)}>
+                      {item.label}
+                    </Link>
+                    {item.children && (
+                      <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4 w-full">
+                        {item.children.map((child, cIdx) => (
+                          <li key={cIdx}>
+                            <Link to={child.href} className={STYLES.mobileSubLink} onClick={(e) => handleNavClick(e, child.href)}>
+                              {child.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="w-full h-px bg-[var(--ui-border)] my-4" aria-hidden="true" />
+
+              <div className="flex flex-col items-center gap-6 w-full">
+                {user ? (
+                  <>
+                    <div className="text-[10px] font-bold tracking-[0.2em] text-[var(--text-sub)] uppercase">
+                      {user.email}
+                    </div>
+                    <Link to="/dashboard" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>
+                      個人中心
+                    </Link>
+                    <button onClick={handleLogout} className="text-xl font-bold tracking-widest text-[#EF4444]">
+                      安全登出
+                    </button>
+                  </>
+                ) : (
+                  <Link to="/login" className={STYLES.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>
+                    會員登入
+                  </Link>
+                )}
+                
+                {/* 實體關閉按鈕 */}
+                <button 
+                  className={STYLES.mobileCloseBar}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  ✕ 關閉選單 CLOSE MENU
+                </button>
+              </div>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
