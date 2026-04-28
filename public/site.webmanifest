@@ -1,0 +1,9 @@
+{
+    "name": "HsinYu Cram School / 欣育文理補習班",
+    "short_name": "欣育",
+    "icons": [],
+    "theme_color": "#000000",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "start_url": "/"
+}
